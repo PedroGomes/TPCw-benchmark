@@ -13,7 +13,7 @@ public interface CRUD {
 
         public void insert(String key , String path, Entity value);
 
-        public void remove(String key , String path);
+        public void remove(String key , String path, String column);
 
         public void update(String key , String path, String column , Object value);
 

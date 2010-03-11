@@ -236,10 +236,11 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
     }
 
     /**DATA BASE METHODS**/
-    public void insert(Object value, String key, String column_family, String column, ConsistencyLevel writeConsistency) {
+    public void insert(Object value, String key, String column_family, String column, int writeConsistency) {
         try {
-            //ColumnPath path = new ColumnPath(column_family, null, null);
-            ColumnPath path = new ColumnPath(column_family);
+
+            ColumnPath path = new ColumnPath();
+            path.setColumn_family(column_family);
             path.setColumn(column.getBytes());
             byte[] valueBytes = BenchmarkUtil.getBytes(value);
             long time = System.currentTimeMillis();
@@ -256,15 +257,17 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
             Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
         } catch (TException ex) {
             Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (TimedOutException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
     }
 
-    public void insertInSuperColumn(Object value, String key, String column_family, String SuperColumn, String Column, ConsistencyLevel writeConsistency) {
+    public void insertInSuperColumn(Object value, String key, String column_family, String SuperColumn, String Column, int writeConsistency) {
         try {
-            //ColumnPath path = new ColumnPath(column_family, SuperColumn.getBytes(), Column.getBytes());
-            ColumnPath path = new ColumnPath(column_family);
-            path.setSuper_column(SuperColumn.getBytes());
-            path.setColumn(Column.getBytes());
+            ColumnPath path = new ColumnPath(column_family, SuperColumn.getBytes(), Column.getBytes());
+            //ColumnPath path = new ColumnPath(column_family);
+           // path.setSuper_column(SuperColumn.getBytes());
+           // path.setColumn(Column.getBytes());
 
 
 
@@ -286,9 +289,9 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
 
     }
 
-    public Object readfromColumn(String key, String ColumnFamily, String column, ConsistencyLevel con) {
+    public Object readfromColumn(String key, String ColumnFamily, String column, int con) {
         try {
-            ColumnPath path = new ColumnPath(ColumnFamily);
+            ColumnPath path = new ColumnPath();
             path.setColumn(column.getBytes());
             byte[] value = getClient().get(Keyspace, key, path, con).column.value;
             Object o = BenchmarkUtil.toObject(value);
@@ -308,12 +311,14 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
         return null;
     }
 
-    public Object readfromSuperColumn(String familykey, String columnFamily, String column, String superColumnKey, ConsistencyLevel con) {
+    public Object readfromSuperColumn(String familykey, String columnFamily, String column, String superColumnKey,int con) {
 
         try {
-            ColumnPath path = new ColumnPath(columnFamily);
-            path.setSuper_column(superColumnKey.getBytes());
-            path.setColumn(column.getBytes());
+
+            ColumnPath path = new ColumnPath(columnFamily, superColumnKey.getBytes(), column.getBytes());
+//            ColumnPath path = new ColumnPath(columnFamily);
+//            path.setSuper_column(superColumnKey.getBytes());
+//            path.setColumn(column.getBytes());
             byte[] value = getClient().get(Keyspace, familykey, path, con).column.value;
             Object o;
             o = BenchmarkUtil.toObject(value);
@@ -347,10 +352,13 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
 
     }
 
-    public void remove(String key, String column) {
+    public void remove(String key, String columnFamily, String column) {
         try {
             //ColumnPath path = new ColumnPath(column, null, null);
-            ColumnPath path = new ColumnPath(column);
+            ColumnPath path = new ColumnPath();
+            path.setColumn_family(columnFamily);
+            path.setColumn(column.getBytes());
+            
             getClient().remove(Keyspace, key, path, System.currentTimeMillis(), DEFAULT);
         } catch (TimedOutException ex) {
             Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
@@ -370,7 +378,12 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
 
             SlicePredicate predicate = new SlicePredicate();
             SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 300);
-            ColumnParent parent = new ColumnParent(column_family);
+
+            ColumnParent parent = new ColumnParent();
+             parent.setColumn_family(column_family);
+
+
+
             predicate.setSlice_range(range);
 
             String last_key = "";
@@ -389,7 +402,8 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
                     last_key = keys.get(keys.size() - 1).key;
                 }
                 // Map<String, List<ColumnOrSuperColumn>> results = getClient().multiget_slice(Keyspace, keys, parent, predicate, ConsistencyLevel.ONE);
-                ColumnPath path = new ColumnPath(column_family);
+                ColumnPath path = new ColumnPath();
+                path.setColumn_family(column_family);
                 for (KeySlice key : keys) {
                     if (!key.columns.isEmpty()) {
                         getClient().remove(Keyspace, key.key, path, System.currentTimeMillis(), DEFAULT);
@@ -418,7 +432,9 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
 
     private List<ColumnOrSuperColumn> getAllColumnsfromCF(String path, String key) {
 
-        ColumnParent parent = new ColumnParent(path);
+        ColumnParent parent = new ColumnParent();
+        parent.setColumn_family(path);
+
         SlicePredicate predicate = new SlicePredicate();
         SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 300);
         try {
@@ -440,7 +456,8 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
 
     private TreeMap<String, List<Column>> getAllColumnsfromSuperCF(String path, String key) {
 
-        ColumnParent parent = new ColumnParent(path);
+        ColumnParent parent = new ColumnParent();
+        parent.setColumn_family(path);
 
         SlicePredicate predicate = new SlicePredicate();
         SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 300);
@@ -480,7 +497,11 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
             String column_family = "Authors";
             SlicePredicate predicate = new SlicePredicate();
             SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 300);
-            ColumnParent parent = new ColumnParent(column_family);
+
+            ColumnParent parent = new ColumnParent();
+            parent.setColumn_family(column_family);
+
+
             predicate.setSlice_range(range);
 
             String last_key = "";
@@ -496,7 +517,8 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
                     last_key = keys.get(keys.size() - 1).key;
                 }
                 // Map<String, List<ColumnOrSuperColumn>> results = client.multiget_slice(Keyspace, keys, parent, predicate, ConsistencyLevel.ONE);
-                ColumnPath path = new ColumnPath(column_family);
+                ColumnPath path = new ColumnPath();
+                path.setColumn_family(column_family);
                 for (KeySlice key : keys) {
 
                     List<ColumnOrSuperColumn> line = key.getColumns();
