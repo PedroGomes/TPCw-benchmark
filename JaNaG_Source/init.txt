@@ -1,0 +1,11 @@
+##Initdatei
+
+##diese wird beim Programmstart gelesen und bezeichnet verschiedene Grunddateien,
+##welche durch das Programm geladenwerden sollen
+
+##reserviertes Wort:
+##DataDir
+
+##Sprachdaten
+languages=languages.txt
+semantics=semantics.txt

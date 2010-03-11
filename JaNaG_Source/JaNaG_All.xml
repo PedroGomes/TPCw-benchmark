@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project JaNaG">
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+    <target name="create_run_jar">
+    	<fileset id="resources" dir=".">
+    		<include name="semantics.txt" />
+    		<include name="languages.txt" />
+        	<include name="readme.txt" />
+		</fileset>
+    	
+    	<delete file="JaNaG.jar"/>
+    	<copy todir="bin/de/beimax/janag">
+        	<fileset refid="resources" />
+    	</copy>
+        <jar destfile="JaNaG.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Main-Class" value="de.beimax.janag.NamegenGUI"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="bin" />
+         </jar>
+    </target>
+</project>

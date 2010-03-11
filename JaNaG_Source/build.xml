@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<project default="main">
+    <target name="main" depends="compile" description="Main target">
+        <echo>Compiling JaNaG complete</echo>
+    </target>
+  
+    <target name="compile" description="Compilation target">
+        <javac srcdir="src/de/beimax/janag" destdir="bin/de/beimax/janag" />
+    </target>
+</project>

@@ -1,0 +1,445 @@
+##Language cultures and Semantics
+##Sprachkulturen und Wortbildungsregeln
+
+##A language pattern will be set by [...]
+##Subdivisions of the language pattern into sexes (or cities, regions, etc.) start with :
+
+##A semantic rule has following pattern:
+##NAME:WEIGHT:^PART1,PART2,PART3,...
+##
+##NAME = Name of Rule (not really important)
+##WEIGHT = Weight of rule, higher numbers are more likely to occur, default = 10
+##^ means, this part will start with a capitalized letter
+##PARTx = Part of pattern found in the table in languages.txt
+
+##Internationalization: You can divide the Name and PARTx by | per language.
+
+##Eine Sprachschablone wird durch eckige Klammern [...] gekennzeichnet
+##Eine Untereinteilung einer Schablone in Geschlechter (oder Städte, Regionen, usw.) beginnt mit :
+
+##Schablonen haben folgende Einteilung:
+##NAME:GEWICHTUNG:^TEIL1,TEIL2,TEIL3,...
+##
+##NAME = Name der Schablone (nur intern wichtig)
+##GEWICHTUNG = Gewichtung der Schablone, je höher, desto häufiger wird sie aufgerufen, leeres Feld = 10
+##^ bedeutet Großschreibung des erstens Zeichens
+##TEILx = Teil des Names aus den Tabelle in languages.txt
+
+## Internationalisierung: Mann kann den Namen und TEILx pro Sprache durch | trennen
+
+#############################################################################
+##Pseudo old German names like Karl, Kunibert, u.ä.
+##Sprachschablone für Pseudo-Altdeutsche Namen wie Karl, Kunibert, u.ä.
+#############################################################################
+[Pseudo Old German|Pseudo-Altdeutsch]
+:Male|Mann
+EinzelnameM:10:^AltdeutschEinzelnameM
+Einzelname+EndungM:10:^AltdeutschEinzelnameM,AltdeutschEndungM
+Anfang+EndeM:10:^AltdeutschAnfang,AltdeutschEndungM
+GottnameM:10:^AltdeutschGott,AltdeutschGottsuffixM
+
+:Female|Frau
+Anfang+EndeW:10:^AltdeutschAnfang,AltdeutschEndungW
+Maennlich+EndeW:10:^AltdeutschEndungM,AltdeutschEndungW
+GottnameW:10:^AltdeutschGott,AltdeutschEndungW
+Einzelname+Endung:5:^AltdeutschEinzelnameM,EndungWeiblich
+
+:City|Stadt
+Stadt1:10:^AltdeutschAnfang,AltdeutschStadt
+Stadt2:10:^AltdeutschEndungM,AltdeutschStadt
+Stadt3:10:^AltdeutschEinzelnameM,AltdeutschStadt
+Stadt4:10:^AltdeutschStadtAnf,AltdeutschStadt
+Stadt5:10:^AltdeutschStadt,RegionEndung
+Stadt6:10:^AltdeutschEndungM,RegionEndung
+Stadt7:10:^AltdeutschStadtAnf,RegionEndung
+Stadt8:10:^AltdeutschStadtAnf,AltdeutschStadt
+
+:Region|
+Region1:5:^AltdeutschAnfang,AltdeutschStadt
+Region2:10:^AltdeutschAnfang,RegionEndung
+Region3:10:^AltdeutschEinzelnameM,RegionEndung
+Region4:10:^AltdeutschStadt,RegionEndung
+Region5:10:^AltdeutschEndungM,RegionEndung
+Region6:10:^AltdeutschStadtAnf,RegionEndung
+Region7:10:^AltdeutschStadtAnf,AltdeutschStadt
+
+#############################################################################
+##Human Fantasy
+##Menschlich Fantasy
+#############################################################################
+[Human Fantasy|Menschlich Fantasy]
+:Male|Mann
+Mann1:10:^FantasyAnfang,FantasyEndungM
+Mann2:10:^FantasyAnfang,FantasyMitte,FantasyEndungM
+Mann3:5:^FantasyMitte,FantasyEndungM
+
+:Female|Frau
+Frau1:10:^FantasyAnfang,FantasyEndungW
+Frau2:10:^FantasyAnfang,FantasyMitte,FantasyEndungW
+Frau3:5:^Vokal,FantasyEndungW
+Frau4:5:^FantasyMitte,FantasyEndungW
+
+#############################################################################
+##Gods - like Human Fantasy, but with added stuff
+##Götter
+#############################################################################
+[Godnames|Götternamen]
+:God|Gott
+Gott1:10:^FantasyAnfang,FantasyEndungM,komma,^God|Gott,space,GottZusatz
+Gott2:10:^FantasyAnfang,FantasyMitte,FantasyEndungM,komma,^God|Gott,space,GottZusatz
+Gott3:5:^FantasyMitte,FantasyEndungM,komma,^God|Gott,space,GottZusatz
+Gott4:5:^FantasyAnfang,FantasyEndungM,komma,^God|Gott,space,GottZusatz,and,GottZusatz
+Gott5:5:^FantasyAnfang,FantasyMitte,FantasyEndungM,komma,^God|Gott,space,GottZusatz,and,GottZusatz
+Gott6:3:^FantasyMitte,FantasyEndungM,komma,^God|Gott,space,GottZusatz,and,GottZusatz
+
+:Godess|Göttin
+Goettin1:10:^FantasyAnfang,FantasyEndungW,komma,^Godess|Goettin,space,GottZusatz
+Goettin2:10:^FantasyAnfang,FantasyMitte,FantasyEndungW,komma,^Godess|Goettin,space,GottZusatz
+Goettin3:5:^Vokal,FantasyEndungW,komma,^Godess|Goettin,space,GottZusatz
+Goettin4:5:^FantasyMitte,FantasyEndungW,komma,^Godess|Goettin,space,GottZusatz
+Goettin5:5:^FantasyAnfang,FantasyEndungW,komma,^Godess|Goettin,space,GottZusatz,and,GottZusatz
+Goettin6:5:^FantasyAnfang,FantasyMitte,FantasyEndungW,komma,^Godess|Goettin,space,GottZusatz,and,GottZusatz
+Goettin7:3:^Vokal,FantasyEndungW,komma,^Godess|Goettin,space,GottZusatz,and,GottZusatz
+Goettin8:3:^FantasyMitte,FantasyEndungW,komma,^Godess|Goettin,space,GottZusatz,and,GottZusatz
+
+#############################################################################
+##Dämonen und ihre Beschreibung, Herkunft, aussehen, Fähigkeiten, u.ä.
+##Sprachschablone für Dämonenwesen, u.ä.
+#############################################################################
+[Dämonen]
+:Demon|Dämon
+Mann:5:^FantasyMitte,DämonEndungM
+EinzelnameM:5:^DämonEinzelnameM
+Einzelname+EndungM:5:^DämonEinzelnameM,DämonEndungM
+EinzelnameFantasy:5:^FantasyAnfang,DämonEndungM
+EinzelnameFantasyLang:5:^FantasyAnfang,FantasyMitte,DämonEndungM
+DämonName+FantasyEndung:4:^DämonAnfang,FantasyEndungM
+Anfang+EndeM:10:^DämonAnfang,DämonEndungM
+##GottnameM:10:^DämonGott,space,^DämonAnfang,DämonEndungM
+##GottnameKomplexM:5:^DämonGott,space,-,space,^DämonPrefix,DämonGottsuffixM
+
+:Demoness|Dämonin
+Anfang+EndeW:10:^DämonAnfang,DämonEndungW
+Maennlich+EndeW:10:^DämonEndungM,DämonEndungW
+##GottnameW:10:^DämonGott,in,space,^DämonAnfang,DämonEndungW
+Einzelname+Endung:5:^DämonEinzelnameM,EndungWeiblich
+
+#############################################################################
+##Greek
+##Griechisch
+#############################################################################
+[Greek|Griechisch]
+:Male|Mann
+Grieche1:10:^Grieche
+
+:Female|Frau
+Griechin1:10:^Griechin
+
+#############################################################################
+##Spanish
+##Spanisch
+#############################################################################
+[Spanish|Spanisch]
+:Male|Mann
+Spanier1:10:^Spanier
+
+:Female|Frau
+Spanierin1:10:^Spanierin
+
+#############################################################################
+##Italian
+##Italienisch
+#############################################################################
+[Italian|Italienisch]
+:Male|Mann
+Italiener1:10:^Italiener
+
+:Female|Frau
+Italienerin1:10:^Italienerin
+
+#############################################################################
+##Irish
+##Irisch
+#############################################################################
+[Irish|Irisch]
+:Male|Mann
+Ire1:10:^Ire
+
+:Female|Frau
+Irin1:10:^Irin
+
+#############################################################################
+##French
+##Französisch
+#############################################################################
+[French|Französisch]
+:Male|Mann
+Franzose1:10:^Franzose
+
+:Female|Frau
+Franzoesin1:10:^Franzoesin
+
+#############################################################################
+##Polish
+##Polnisch
+#############################################################################
+[Polish|Polnisch]
+:Male|Mann
+Pole1:10:^Pole
+
+:Female|Frau
+Polin1:10:^Polin
+
+#############################################################################
+##Hebrew
+##Hebräisch
+#############################################################################
+[Hebrew|Hebräisch]
+:Male|Mann
+HebraeischM1:10:^HebraeischM
+
+:Female|Frau
+HebraeischW1:10:^HebraeischW
+
+#############################################################################
+##Orcish
+##Orkische Sprachschablone
+#############################################################################
+[Orcish|Orkisch]
+:Orc|Ork
+Ork1:10:^OrkAnfang,Vokal,OrkMittel
+Ork2:10:^Vokal,OrkAnfang,Vokal,OrkMittel
+Ork3:10:^Vokal,OrkAnfang2,OrkAnfang
+Ork4:10:^Vokal,OrkAnfang2,OrkAnfang,Vokal,OrkMittel
+Ork5:10:^OrkAnfang2,Vokal,OrkMittel
+Ork6:10:^Vokal,OrkAnfang2,Vokal,OrkMittel
+Ork7:10:^Vokal,OrkMittel
+Ork8:20:^OrkAnfang,Vokal,OrkMittel2,Vokal,OrkMittel
+Ork9:10:^OrkAnfang,Vokal,OrkMittel2,Vokal,OrkMittel2
+Ork10:15:^OrkMittel2,Vokal,OrkMittel2
+Ork11:15:^Vokal,OrkMittel2,Vokal,OrkMittel2
+
+#############################################################################
+##Popular American (Human) Names 1990
+##Namen nach dem US Zensus von 1990
+#############################################################################
+[U.S. Human (1990)|US-Zensus]
+:Male - Uncommon|Männlich Ungewöhnlich
+Maletop500+:10:^mgn500+,space,^psn500+
+
+:Male - Top 10|Männlich Top 10
+Maletop10:10:^mgn10,space,^psn10
+
+:Male - Top 20|Männlich Top 20
+Maletop20:10:^mgn10,space,^psn10
+Maletop20:10:^mgn20,space,^psn20
+
+:Male - Top 30|Männlich Top 30
+Maletop30:10:^mgn10,space,^psn10
+Maletop30:10:^mgn20,space,^psn20
+Maletop30:10:^mgn30,space,^psn30
+
+:Male - Top 40|Männlich Top 40
+Maletop40:10:^mgn10,space,^psn10
+Maletop40:10:^mgn20,space,^psn20
+Maletop40:10:^mgn30,space,^psn30
+Maletop40:10:^mgn40,space,^psn40
+
+:Male - Top 50|Männlich Top 50
+Maletop50:10:^mgn10,space,^psn10
+Maletop50:10:^mgn20,space,^psn20
+Maletop50:10:^mgn30,space,^psn30
+Maletop50:10:^mgn40,space,^psn40
+Maletop50:10:^mgn50,space,^psn50
+
+:Male - Top 100|Männlich Top 100
+Maletop100:10:^mgn10,space,^psn10
+Maletop100:10:^mgn20,space,^psn20
+Maletop100:10:^mgn30,space,^psn30
+Maletop100:10:^mgn40,space,^psn40
+Maletop100:10:^mgn50,space,^psn50
+Maletop100:10:^mgn60,space,^psn60
+Maletop100:10:^mgn70,space,^psn70
+Maletop100:10:^mgn90,space,^psn90
+Maletop100:10:^mgn100,space,^psn100
+
+:Male - Top 200|Männlich Top 200
+Maletop200:10:^mgn10,space,^psn10
+Maletop200:10:^mgn20,space,^psn20
+Maletop200:10:^mgn30,space,^psn30
+Maletop200:10:^mgn40,space,^psn40
+Maletop200:10:^mgn50,space,^psn50
+Maletop200:10:^mgn60,space,^psn60
+Maletop200:10:^mgn70,space,^psn70
+Maletop200:10:^mgn90,space,^psn90
+Maletop200:10:^mgn100,space,^psn100
+Maletop200:10:^mgn200,space,^psn200
+
+:Male - Top 300|Männlich Top 300
+Maletop300:10:^mgn10,space,^psn10
+Maletop300:10:^mgn20,space,^psn20
+Maletop300:10:^mgn30,space,^psn30
+Maletop300:10:^mgn40,space,^psn40
+Maletop300:10:^mgn50,space,^psn50
+Maletop300:10:^mgn60,space,^psn60
+Maletop300:10:^mgn70,space,^psn70
+Maletop300:10:^mgn90,space,^psn90
+Maletop300:10:^mgn100,space,^psn100
+Maletop300:10:^mgn200,space,^psn200
+Maletop300:10:^mgn300,space,^psn300
+
+:Male - Top 400|Männlich Top 400
+Maletop400:10:^mgn10,space,^psn10
+Maletop400:10:^mgn20,space,^psn20
+Maletop400:10:^mgn30,space,^psn30
+Maletop400:10:^mgn40,space,^psn40
+Maletop400:10:^mgn50,space,^psn50
+Maletop400:10:^mgn60,space,^psn60
+Maletop400:10:^mgn70,space,^psn70
+Maletop400:10:^mgn90,space,^psn90
+Maletop400:10:^mgn100,space,^psn100
+Maletop400:10:^mgn200,space,^psn200
+Maletop400:10:^mgn300,space,^psn300
+Maletop400:10:^mgn400,space,^psn400
+
+:Male - Top 500|Männlich Top 500
+Maletop500:10:^mgn10,space,^psn10
+Maletop500:10:^mgn20,space,^psn20
+Maletop500:10:^mgn30,space,^psn30
+Maletop500:10:^mgn40,space,^psn40
+Maletop500:10:^mgn50,space,^psn50
+Maletop500:10:^mgn60,space,^psn60
+Maletop500:10:^mgn70,space,^psn70
+Maletop500:10:^mgn90,space,^psn90
+Maletop500:10:^mgn100,space,^psn100
+Maletop500:10:^mgn200,space,^psn200
+Maletop500:10:^mgn300,space,^psn300
+Maletop500:10:^mgn400,space,^psn400
+Maletop500:10:^mgn500,space,^psn500
+
+:Male - Top 500+|Männlich Top 500+
+Maletop500+:10:^mgn10,space,^psn10
+Maletop500+:10:^mgn20,space,^psn20
+Maletop500+:10:^mgn30,space,^psn30
+Maletop500+:10:^mgn40,space,^psn40
+Maletop500+:10:^mgn50,space,^psn50
+Maletop500+:10:^mgn60,space,^psn60
+Maletop500+:10:^mgn70,space,^psn70
+Maletop500+:10:^mgn90,space,^psn90
+Maletop500+:10:^mgn100,space,^psn100
+Maletop500+:10:^mgn200,space,^psn200
+Maletop500+:10:^mgn300,space,^psn300
+Maletop500+:10:^mgn400,space,^psn400
+Maletop500+:10:^mgn500,space,^psn500
+Maletop500+:10:^mgn500+,space,^psn500+
+
+:Female - Uncommon|Weiblich Ungewöhnlich
+Femaletop500+:10:^fgn500+,space,^psn500+
+
+:Female - Top 10|Weiblich Top 10
+Femaletop10:10:^fgn10,space,^psn10
+
+:Female - Top 20|Weiblich Top 20
+Femaletop20:10:^fgn10,space,^psn10
+Femaletop20:10:^fgn20,space,^psn20
+
+:Female - Top 30|Weiblich Top 30
+Femaletop30:10:^fgn10,space,^psn10
+Femaletop30:10:^fgn20,space,^psn20
+Femaletop30:10:^fgn30,space,^psn30
+
+:Female - Top 40|Weiblich Top 40
+Femaletop40:10:^fgn10,space,^psn10
+Femaletop40:10:^fgn20,space,^psn20
+Femaletop40:10:^fgn30,space,^psn30
+Femaletop40:10:^fgn40,space,^psn40
+
+:Female - Top 50|Weiblich Top 50
+Femaletop50:10:^fgn10,space,^psn10
+Femaletop50:10:^fgn20,space,^psn20
+Femaletop50:10:^fgn30,space,^psn30
+Femaletop50:10:^fgn40,space,^psn40
+Femaletop50:10:^fgn50,space,^psn50
+
+:Female - Top 100|Weiblich Top 100
+Femaletop100:10:^fgn10,space,^psn10
+Femaletop100:10:^fgn20,space,^psn20
+Femaletop100:10:^fgn30,space,^psn30
+Femaletop100:10:^fgn40,space,^psn40
+Femaletop100:10:^fgn50,space,^psn50
+Femaletop100:10:^fgn60,space,^psn60
+Femaletop100:10:^fgn70,space,^psn70
+Femaletop100:10:^fgn90,space,^psn90
+Femaletop100:10:^fgn100,space,^psn100
+
+:Female - Top 200|Weiblich Top 200
+Femaletop200:10:^fgn10,space,^psn10
+Femaletop200:10:^fgn20,space,^psn20
+Femaletop200:10:^fgn30,space,^psn30
+Femaletop200:10:^fgn40,space,^psn40
+Femaletop200:10:^fgn50,space,^psn50
+Femaletop200:10:^fgn60,space,^psn60
+Femaletop200:10:^fgn70,space,^psn70
+Femaletop200:10:^fgn90,space,^psn90
+Femaletop200:10:^fgn100,space,^psn100
+Femaletop200:10:^fgn200,space,^psn200
+
+:Female - Top 300|Weiblich Top 300
+Femaletop300:10:^fgn10,space,^psn10
+Femaletop300:10:^fgn20,space,^psn20
+Femaletop300:10:^fgn30,space,^psn30
+Femaletop300:10:^fgn40,space,^psn40
+Femaletop300:10:^fgn50,space,^psn50
+Femaletop300:10:^fgn60,space,^psn60
+Femaletop300:10:^fgn70,space,^psn70
+Femaletop300:10:^fgn90,space,^psn90
+Femaletop300:10:^fgn100,space,^psn100
+Femaletop300:10:^fgn200,space,^psn200
+Femaletop300:10:^fgn300,space,^psn300
+
+:Female - Top 400|Weiblich Top 400
+Femaletop400:10:^fgn10,space,^psn10
+Femaletop400:10:^fgn20,space,^psn20
+Femaletop400:10:^fgn30,space,^psn30
+Femaletop400:10:^fgn40,space,^psn40
+Femaletop400:10:^fgn50,space,^psn50
+Femaletop400:10:^fgn60,space,^psn60
+Femaletop400:10:^fgn70,space,^psn70
+Femaletop400:10:^fgn90,space,^psn90
+Femaletop400:10:^fgn100,space,^psn100
+Femaletop400:10:^fgn200,space,^psn200
+Femaletop400:10:^fgn300,space,^psn300
+Femaletop400:10:^fgn400,space,^psn400
+
+:Female - Top 500|Weiblich Top 500
+Femaletop500:10:^fgn10,space,^psn10
+Femaletop500:10:^fgn20,space,^psn20
+Femaletop500:10:^fgn30,space,^psn30
+Femaletop500:10:^fgn40,space,^psn40
+Femaletop500:10:^fgn50,space,^psn50
+Femaletop500:10:^fgn60,space,^psn60
+Femaletop500:10:^fgn70,space,^psn70
+Femaletop500:10:^fgn90,space,^psn90
+Femaletop500:10:^fgn100,space,^psn100
+Femaletop500:10:^fgn200,space,^psn200
+Femaletop500:10:^fgn300,space,^psn300
+Femaletop500:10:^fgn400,space,^psn400
+Femaletop500:10:^fgn500,space,^psn500
+
+:Female - Top 500+|Weiblich Top 500+
+Femaletop500+:10:^fgn10,space,^psn10
+Femaletop500+:10:^fgn20,space,^psn20
+Femaletop500+:10:^fgn30,space,^psn30
+Femaletop500+:10:^fgn40,space,^psn40
+Femaletop500+:10:^fgn50,space,^psn50
+Femaletop500+:10:^fgn60,space,^psn60
+Femaletop500+:10:^fgn70,space,^psn70
+Femaletop500+:10:^fgn90,space,^psn90
+Femaletop500+:10:^fgn100,space,^psn100
+Femaletop500+:10:^fgn200,space,^psn200
+Femaletop500+:10:^fgn300,space,^psn300
+Femaletop500+:10:^fgn400,space,^psn400
+Femaletop500+:10:^fgn500,space,^psn500
+Femaletop500+:10:^fgn500+,space,^psn500+
+
+[End]

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_source" name="Create Source Files for JaNaG">
+    <target name="create_source">
+       	<delete file="JaNaG_Source.tgz"/>
+       	<delete file="JaNaG_Source.tbz2"/>
+       	<delete file="JaNaG_Source.zip"/>
+    	
+    	<tar destfile="JaNaG_Source.tgz" compression="gzip">
+            <fileset dir="src" >
+               	<include name="**/*.java"/>
+               	<include name="**/**.properties"/>
+        	</fileset>
+            <fileset file="*.txt" />
+            <fileset file="*.xml" />
+            <fileset file="index.html" />
+    	</tar>
+
+    	<tar destfile="JaNaG_Source.tbz2" compression="bzip2">
+            <fileset dir="src" >
+               	<include name="**/*.java"/>
+               	<include name="**/**.properties"/>
+        	</fileset>
+            <fileset file="*.txt" />
+            <fileset file="*.xml" />
+            <fileset file="index.html" />
+    	</tar>
+
+    	<zip destfile="JaNaG_Source.zip">
+            <fileset dir="src" >
+               	<include name="**/*.java"/>
+               	<include name="**/**.properties"/>
+        	</fileset>
+            <fileset file="*.txt" />
+            <fileset file="*.xml" />
+            <fileset file="index.html" />
+    	</zip>
+	</target>
+</project>
