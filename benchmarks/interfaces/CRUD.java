@@ -6,18 +6,26 @@
 package benchmarks.interfaces;
 
 /**
- *
  * @author pedro
  */
 public interface CRUD {
 
-        public void insert(String key , String path, Entity value);
+    public CRUDclient getClient();
 
-        public void remove(String key , String path, String column);
+    interface CRUDclient {
 
-        public void update(String key , String path, String column , Object value);
+        public void insert(String key, String path, Entity value);
 
-        public Object read(String key , String path, String column);
+        public void remove(String key, String path, String column);
+
+        public void update(String key, String path, String column, Object value);
+
+        public Object read(String key, String path, String column);
 
         public void truncate(String path, int number_keys);
+
+        public void closeClient();
+    }
+
 }
+
