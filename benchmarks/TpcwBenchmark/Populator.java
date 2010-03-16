@@ -7,6 +7,7 @@ package benchmarks.TpcwBenchmark;
 import JaNaG_Source.de.beimax.janag.Namegenerator;
 import benchmarks.helpers.BenchmarkUtil;
 import benchmarks.interfaces.CRUD;
+
 import java.io.FileNotFoundException;
 import java.lang.reflect.InvocationTargetException;
 
@@ -33,6 +34,7 @@ import benchmarks.helpers.JsonUtil;
 import benchmarks.dataStatistics.ResultHandler;
 import benchmarks.interfaces.Entity;
 import benchmarks.interfaces.BenchmarkPopulator;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -43,20 +45,23 @@ import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 
 /**
- *
  * @author pedro
  */
 public class Populator implements BenchmarkPopulator {
 
-    /**Time messuerments*/
+    /**
+     * Time measurements
+     */
     private static boolean delay_inserts = false;
     private static int delay_time = 100;
     private static Random rand = new Random();
     private int rounds = 500;
     private ResultHandler results;
+    String result_path;
+
     //ATTENTION: The NUM_EBS and NUM_ITEMS variables are the only variables
     //that should be modified in order to rescale the DB.
-    private static /* final */ int NUM_EBS = 1;
+    private static /* final */ int NUM_EBS = 10;
     private static /* final */ int NUM_ITEMS = 1000;
     private static /* final */ int NUM_CUSTOMERS = NUM_EBS * 2880;
     private static /* final */ int NUM_ADDRESSES = 2 * NUM_CUSTOMERS;
@@ -64,7 +69,7 @@ public class Populator implements BenchmarkPopulator {
     private static /* final */ int NUM_ORDERS = (int) (.9 * NUM_CUSTOMERS);
     private static /* final */ int NUM_COUNTRIES = 92; // this is constant. Never changes!
     // static Client client;
-    private static CRUD databaseClient;
+    private static CRUD databaseClientFactory;
     ArrayList<String> authors = new ArrayList<String>();
     ArrayList<String> addresses = new ArrayList<String>();
     ArrayList<String> countries = new ArrayList<String>();
@@ -72,15 +77,16 @@ public class Populator implements BenchmarkPopulator {
     ArrayList<String> items = new ArrayList<String>();
     // CopyOnWriteArrayList<Orders> orders = new CopyOnWriteArrayList<Orders>();
     // CopyOnWriteArrayList<OrderLine> orderLines = new CopyOnWriteArrayList<OrderLine>();
-    boolean debug = false;
+    boolean debug = true;
     private static int num_threads = 1;
     boolean error = false;
     private CountDownLatch barrier;
 
     //databaseClient,number_threads_populator,benchmarkPopulatorInfo
+
     public Populator(CRUD databaseCrudClient, int clients, Map<String, String> info) {
 
-        databaseClient = databaseCrudClient;
+        databaseClientFactory = databaseCrudClient;
         num_threads = clients;
 
         String do_delays = info.get("delay_inserts");
@@ -91,14 +97,18 @@ public class Populator implements BenchmarkPopulator {
 
         if (rounds_info != null) {
             rounds = Integer.valueOf(rounds_info.trim());
+        } else {
             System.out.println("ROUND NUMBER NOT FOUND: 500 DEFAULT");
         }
         this.results = new ResultHandler("TPCW_POPULATOR", rounds);
+
+        result_path = info.get("result_path");
+
     }
 
-    /**
-     * @param args the command line arguments
-     */
+    //  /**
+    // * @param args the command line arguments
+    //   */
 //    public static void main(String[] args) {
 //
 //        ResultHandler resultHandler = new ResultHandler("TPCW benchamrk", 400);
@@ -106,6 +116,17 @@ public class Populator implements BenchmarkPopulator {
 //        m.populate();
 //
 //    }
+
+
+    public void databaseInsert(CRUD.CRUDclient client, String Operation, String key, String path, Entity value, ResultHandler results) {
+
+        long time1 = System.currentTimeMillis();
+        client.insert(key, path, value);
+        long time2 = System.currentTimeMillis();
+        results.logResult(Operation, time2 - time1);
+
+    }
+
     public boolean populate() {
 
 
@@ -147,6 +168,7 @@ public class Populator implements BenchmarkPopulator {
             }
 
             results.listDataToSOutput();
+            results.listDatatoFiles(result_path, "", true);
             results.cleanResults();
             return true;
         }
@@ -161,31 +183,26 @@ public class Populator implements BenchmarkPopulator {
 
     public void removeALL() {
 
-        databaseClient.truncate("Costumer", 70000);
-        databaseClient.truncate("Items", NUM_ITEMS);
-        databaseClient.truncate("Orders", NUM_ORDERS);
-        databaseClient.truncate("OrderLines", NUM_ORDERS * 5);
-        databaseClient.truncate("Author", NUM_AUTHORS);
-        databaseClient.truncate("Countries", NUM_COUNTRIES);
-        databaseClient.truncate("Addresses", 180000);
+        CRUD.CRUDclient client = databaseClientFactory.getClient();
+        client.truncate("Costumer", 70000);
+        client.truncate("Items", NUM_ITEMS);
+        client.truncate("Orders", NUM_ORDERS);
+        client.truncate("OrderLines", NUM_ORDERS * 5);
+        client.truncate("Author", NUM_AUTHORS);
+        client.truncate("Countries", NUM_COUNTRIES);
+        client.truncate("Addresses", 180000);
 
     }
 
-    public void databaseInsert(String Operation, String key, String path, Entity value,ResultHandler results) {
-
-        long time1 = System.currentTimeMillis();
-        databaseClient.insert(key, path, value);
-        long time2 = System.currentTimeMillis();
-        results.logResult(Operation, time2 - time1);
-
-    }
 
     /************************************************************************/
     /************************************************************************/
     /************************************************************************/
-    /***************
+    /**
+     * ************
      * Authors*
-     ****************/
+     * **************
+     */
     public void insertAuthors(int n) throws InterruptedException {
         int threads = num_threads;
         int sections = n;
@@ -200,6 +217,7 @@ public class Populator implements BenchmarkPopulator {
             firstSection = sections + rest;
         }
 
+        System.out.println(">>Inserting " + n + " Authors || populatores " + num_threads);
         barrier = new CountDownLatch(threads);
 
         AuthorPopulator[] partial_authors = new AuthorPopulator[threads];
@@ -218,24 +236,28 @@ public class Populator implements BenchmarkPopulator {
         }
 
         barrier.await();
-        for (AuthorPopulator authorPopulator : partial_authors) {
-            ArrayList<String> ids = authorPopulator.getData();
+        for (AuthorPopulator populator : partial_authors) {
+            ArrayList<String> ids = populator.getData();
             for (String id : ids) {
                 authors.add(id);
             }
-            results.addResults(authorPopulator.returnResults());
+            results.addResults(populator.returnResults());
+            populator.partial_results.cleanResults();
         }
-
+        partial_authors = null;
+        System.gc();
 
     }
 
     class AuthorPopulator implements Runnable {
 
         int num_authors;
+        CRUD.CRUDclient client;
         ArrayList<String> partial_authors;
         ResultHandler partial_results;
 
         public AuthorPopulator(int num_authors) {
+            client = databaseClientFactory.getClient();
             this.num_authors = num_authors;
             partial_authors = new ArrayList<String>();
             partial_results = new ResultHandler("", rounds);
@@ -243,6 +265,16 @@ public class Populator implements BenchmarkPopulator {
 
         public void run() {
             this.insertAuthors(num_authors);
+        }
+
+
+        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
+
+            long time1 = System.currentTimeMillis();
+            client.insert(key, path, value);
+            long time2 = System.currentTimeMillis();
+            results.logResult(Operation, time2 - time1);
+
         }
 
         public void insertAuthors(int n) {
@@ -270,7 +302,7 @@ public class Populator implements BenchmarkPopulator {
 //            insert(bio, key, "Author", "A_BIO", writeConsistency);
 
                 Author a = new Author(key, first_name, last_name, middle_name, dob, bio);
-                databaseInsert("INSERT Authors", key, "Author", a,partial_results);
+                databaseInsert("INSERT_Authors", key, "Author", a, partial_results);
 
                 partial_authors.add(a.getA_id());
             }
@@ -279,6 +311,7 @@ public class Populator implements BenchmarkPopulator {
             }
 
             barrier.countDown();
+            client.closeClient();
 
         }
 
@@ -291,9 +324,11 @@ public class Populator implements BenchmarkPopulator {
         }
     }
 
-    /***************
+    /**
+     * ************
      * Costumers*
-     ****************/
+     * **************
+     */
     public void insertCostumers(int n) throws InterruptedException {
 
         int threads = num_threads;
@@ -308,7 +343,7 @@ public class Populator implements BenchmarkPopulator {
             int rest = n - (num_threads * sections);
             firstSection = sections + rest;
         }
-
+        System.out.println(">>Inserting " + n + " Costumers || populatores " + num_threads);
         barrier = new CountDownLatch(threads);
 
         CostumerPopulator[] partial_costumers = new CostumerPopulator[threads];
@@ -326,24 +361,30 @@ public class Populator implements BenchmarkPopulator {
             t.start();
         }
         barrier.await();
-        for (CostumerPopulator costumerPopulator : partial_costumers) {
-            ArrayList<String> ids = costumerPopulator.getData();
+        for (CostumerPopulator populator : partial_costumers) {
+            ArrayList<String> ids = populator.getData();
             for (String id : ids) {
                 costumers.add(id);
             }
-            results.addResults(costumerPopulator.returnResults());
-        }
+            results.addResults(populator.returnResults());
+            populator.partial_results.cleanResults();
 
+        }
+        partial_costumers = null;
+        System.gc();
 
     }
 
+
     class CostumerPopulator implements Runnable {
 
+        CRUD.CRUDclient client;
         int num_costumers;
         ArrayList<String> partial_costumers;
         ResultHandler partial_results;
 
         public CostumerPopulator(int num_costumers) {
+            client = databaseClientFactory.getClient();
             this.num_costumers = num_costumers;
             partial_costumers = new ArrayList<String>();
             partial_results = new ResultHandler("", rounds);
@@ -431,7 +472,7 @@ public class Populator implements BenchmarkPopulator {
 
                 Costumer c = new Costumer(key, key, pass, last_name, first_name, phone, email, C_SINCE, C_LAST_LOGIN, C_LOGIN, C_EXPIRATION, C_BALANCE, C_YTD_PMT, C_BIRTHDATE, C_DATA, discount, address_id);
 
-                databaseInsert("INSERT COSTUMERS", key, "Costumer", c,partial_results);
+                databaseInsert("INSERT_Costumers", key, "Costumer", c, partial_results);
 
 
                 partial_costumers.add(c.getC_id());
@@ -442,6 +483,7 @@ public class Populator implements BenchmarkPopulator {
                 System.out.println("Thread finished: " + num_costumers + " costumers inserted");
             }
             barrier.countDown();
+            client.closeClient();
         }
 
         public ArrayList<String> getData() {
@@ -451,11 +493,24 @@ public class Populator implements BenchmarkPopulator {
         public ResultHandler returnResults() {
             return partial_results;
         }
+
+
+        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
+
+            long time1 = System.currentTimeMillis();
+            client.insert(key, path, value);
+            long time2 = System.currentTimeMillis();
+            results.logResult(Operation, time2 - time1);
+
+        }
+
     }
 
-    /***************
+    /**
+     * ************
      * Items*
-     ****************/
+     * **************
+     */
     public void insertItems(int n) throws InterruptedException {
         int threads = num_threads;
         int sections = n;
@@ -470,6 +525,7 @@ public class Populator implements BenchmarkPopulator {
             firstSection = sections + rest;
         }
 
+        System.out.println(">>Inserting " + n + " Items || populatores " + num_threads);
         barrier = new CountDownLatch(threads);
 
         ItemPopulator[] partial_items = new ItemPopulator[threads];
@@ -488,26 +544,29 @@ public class Populator implements BenchmarkPopulator {
         }
         barrier.await();
 
-        for (ItemPopulator itemPopulator : partial_items) {
-            ArrayList<String> ids = itemPopulator.getData();
+        for (ItemPopulator populator : partial_items) {
+            ArrayList<String> ids = populator.getData();
             for (String id : ids) {
                 items.add(id);
             }
-            results.addResults(itemPopulator.returnResults());
-
-
-
+            results.addResults(populator.returnResults());
+            populator.partial_results.cleanResults();
         }
+        partial_items = null;
+        System.gc();
 
     }
 
     class ItemPopulator implements Runnable {
 
+
+        CRUD.CRUDclient client;
         int num_items;
         ArrayList<String> partial_items;
         ResultHandler partial_results;
 
         public ItemPopulator(int num_items) {
+            client = databaseClientFactory.getClient();
             this.num_items = num_items;
             partial_items = new ArrayList<String>();
             partial_results = new ResultHandler("", rounds);
@@ -520,14 +579,14 @@ public class Populator implements BenchmarkPopulator {
         public void insertItems(int n) {
 
             String[] subjects = {"ARTS", "BIOGRAPHIES", "BUSINESS", "CHILDREN",
-                "COMPUTERS", "COOKING", "HEALTH", "HISTORY",
-                "HOME", "HUMOR", "LITERATURE", "MYSTERY",
-                "NON-FICTION", "PARENTING", "POLITICS",
-                "REFERENCE", "RELIGION", "ROMANCE",
-                "SELF-HELP", "SCIENCE-NATURE", "SCIENCE-FICTION",
-                "SPORTS", "YOUTH", "TRAVEL"};
+                    "COMPUTERS", "COOKING", "HEALTH", "HISTORY",
+                    "HOME", "HUMOR", "LITERATURE", "MYSTERY",
+                    "NON-FICTION", "PARENTING", "POLITICS",
+                    "REFERENCE", "RELIGION", "ROMANCE",
+                    "SELF-HELP", "SCIENCE-NATURE", "SCIENCE-FICTION",
+                    "SPORTS", "YOUTH", "TRAVEL"};
             String[] backings = {"HARDBACK", "PAPERBACK", "USED", "AUDIO",
-                "LIMITED-EDITION"};
+                    "LIMITED-EDITION"};
 
 
             Namegenerator ng = new Namegenerator("src/JaNaG_Source/languages.txt", "src/JaNaG_Source/semantics.txt");
@@ -585,7 +644,7 @@ public class Populator implements BenchmarkPopulator {
                 I_COST = rand.nextInt(100);
                 // insert(I_AUTHOR, I_TITLE, column_family, "I_AUTHOR", writeCon);
 
-                I_STOCK = rand.nextInt(10);
+                I_STOCK = (long) rand.nextInt(10);
                 // insert(I_STOCK, I_TITLE, column_family, "I_STOCK", writeCon);
 
                 int related_number = rand.nextInt(5);
@@ -614,7 +673,6 @@ public class Populator implements BenchmarkPopulator {
                 java.sql.Date pubDate = new java.sql.Date(cal.getTime().getTime());
 
 
-
                 String thumbnail = new String("img" + i % 100 + "/thumb_" + i + ".gif");
                 String image = new String("img" + i % 100 + "/image_" + i + ".gif");
 
@@ -630,10 +688,9 @@ public class Populator implements BenchmarkPopulator {
                         + ((double) BenchmarkUtil.getRandomInt(1, 9999) / 100.0);
 
 
-
                 Item item = new Item(I_TITLE, I_TITLE, pubDate, I_PUBLISHER, I_DESC, I_SUBJECT, thumbnail, image, I_COST, I_STOCK, isbn, srp, I_RELATED, I_PAGE, avail, I_BACKING, dimensions, author);
 
-                databaseInsert("INSERT ITEMS", I_TITLE, column_family, item,partial_results);
+                databaseInsert("INSERT_Items", I_TITLE, column_family, item, partial_results);
 
                 partial_items.add(item.getI_id());
 
@@ -643,6 +700,16 @@ public class Populator implements BenchmarkPopulator {
             }
 
             barrier.countDown();
+            client.closeClient();
+        }
+
+        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
+
+            long time1 = System.currentTimeMillis();
+            client.insert(key, path, value);
+            long time2 = System.currentTimeMillis();
+            results.logResult(Operation, time2 - time1);
+
         }
 
         public ArrayList<String> getData() {
@@ -654,9 +721,11 @@ public class Populator implements BenchmarkPopulator {
         }
     }
 
-    /***********
+    /**
+     * ***********
      * Addresses*
-     ***********/
+     * ***********
+     */
     public void insertAddresses(int n) throws InterruptedException {
 
         int threads = num_threads;
@@ -671,6 +740,8 @@ public class Populator implements BenchmarkPopulator {
             int rest = n - (num_threads * sections);
             firstSection = sections + rest;
         }
+
+        System.out.println(">>Inserting " + n + " Addresses || populatores " + num_threads);
 
         barrier = new CountDownLatch(threads);
         AddressPopulator[] partial_addresses = new AddressPopulator[threads];
@@ -689,24 +760,30 @@ public class Populator implements BenchmarkPopulator {
         }
         barrier.await();
 
-        for (AddressPopulator addressPopulator : partial_addresses) {
+        for (AddressPopulator populator : partial_addresses) {
 
-              ArrayList<String> ids =  addressPopulator.getData();
-              for(String id : ids){
+            ArrayList<String> ids = populator.getData();
+            for (String id : ids) {
                 addresses.add(id);
-              }
-              results.addResults(addressPopulator.returnResults());
+            }
+            results.addResults(populator.returnResults());
+            populator.partial_results.cleanResults();
+            populator = null;
         }
+        partial_addresses =  null;
+        System.gc();
 
     }
 
     class AddressPopulator implements Runnable {
 
         int num_addresses;
+        CRUD.CRUDclient client;
         ArrayList<String> partial_adresses;
         ResultHandler partial_results;
 
         public AddressPopulator(int num_addresses) {
+            client = databaseClientFactory.getClient();
             this.num_addresses = num_addresses;
             partial_adresses = new ArrayList<String>();
             partial_results = new ResultHandler("", rounds);
@@ -714,6 +791,15 @@ public class Populator implements BenchmarkPopulator {
 
         public void run() {
             this.insertAddress(num_addresses);
+        }
+
+        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
+
+            long time1 = System.currentTimeMillis();
+            client.insert(key, path, value);
+            long time2 = System.currentTimeMillis();
+            results.logResult(Operation, time2 - time1);
+
         }
 
         private void insertAddress(int n) {
@@ -746,7 +832,7 @@ public class Populator implements BenchmarkPopulator {
 //            insert(ADDR_ZIP, key, "Addresses", "ADDR_ZIP", writeConsistency);
 //            insert(country.getCo_id(), key, "Addresses", "ADDR_CO_ID", writeConsistency);
 
-                databaseInsert("INSERT Adresses", key, "Addresses", address,partial_results);
+                databaseInsert("INSERT_Addresses", key, "Addresses", address, partial_results);
                 partial_adresses.add(address.getAddr_id());
 
 
@@ -756,6 +842,7 @@ public class Populator implements BenchmarkPopulator {
             }
 
             barrier.countDown();
+            client.closeClient();
         }
 
         public ArrayList<String> getData() {
@@ -767,54 +854,59 @@ public class Populator implements BenchmarkPopulator {
         }
     }
 
-    /***********
-     *Countries *
-     ***********/
+    /**
+     * ********
+     * Countries *
+     * *********
+     */
     private void insertCountries(int numCountries) {
 
+        CRUD.CRUDclient client;
+        client = databaseClientFactory.getClient();
+
         String[] countriesNames = {
-            "United States", "United Kingdom", "Canada", "Germany", "France", "Japan",
-            "Netherlands", "Italy", "Switzerland", "Australia", "Algeria", "Argentina",
-            "Armenia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangla Desh",
-            "Barbados", "Belarus", "Belgium", "Bermuda", "Bolivia", "Botswana", "Brazil",
-            "Bulgaria", "Cayman Islands", "Chad", "Chile", "China", "Christmas Island",
-            "Colombia", "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark",
-            "Dominican Republic", "Eastern Caribbean", "Ecuador", "Egypt", "El Salvador",
-            "Estonia", "Ethiopia", "Falkland Island", "Faroe Island", "Fiji", "Finland",
-            "Gabon", "Gibraltar", "Greece", "Guam", "Hong Kong", "Hungary", "Iceland",
-            "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Jamaica", "Jordan",
-            "Kazakhstan", "Kuwait", "Lebanon", "Luxembourg", "Malaysia", "Mexico",
-            "Mauritius", "New Zealand", "Norway", "Pakistan", "Philippines", "Poland",
-            "Portugal", "Romania", "Russia", "Saudi Arabia", "Singapore", "Slovakia",
-            "South Africa", "South Korea", "Spain", "Sudan", "Sweden", "Taiwan",
-            "Thailand", "Trinidad", "Turkey", "Venezuela", "Zambia"
+                "United States", "United Kingdom", "Canada", "Germany", "France", "Japan",
+                "Netherlands", "Italy", "Switzerland", "Australia", "Algeria", "Argentina",
+                "Armenia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangla Desh",
+                "Barbados", "Belarus", "Belgium", "Bermuda", "Bolivia", "Botswana", "Brazil",
+                "Bulgaria", "Cayman Islands", "Chad", "Chile", "China", "Christmas Island",
+                "Colombia", "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark",
+                "Dominican Republic", "Eastern Caribbean", "Ecuador", "Egypt", "El Salvador",
+                "Estonia", "Ethiopia", "Falkland Island", "Faroe Island", "Fiji", "Finland",
+                "Gabon", "Gibraltar", "Greece", "Guam", "Hong Kong", "Hungary", "Iceland",
+                "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Jamaica", "Jordan",
+                "Kazakhstan", "Kuwait", "Lebanon", "Luxembourg", "Malaysia", "Mexico",
+                "Mauritius", "New Zealand", "Norway", "Pakistan", "Philippines", "Poland",
+                "Portugal", "Romania", "Russia", "Saudi Arabia", "Singapore", "Slovakia",
+                "South Africa", "South Korea", "Spain", "Sudan", "Sweden", "Taiwan",
+                "Thailand", "Trinidad", "Turkey", "Venezuela", "Zambia"
         };
 
         double[] exchanges = {
-            1, .625461, 1.46712, 1.86125, 6.24238, 121.907, 2.09715, 1842.64, 1.51645,
-            1.54208, 65.3851, 0.998, 540.92, 13.0949, 3977, 1, .3757, 48.65, 2, 248000,
-            38.3892, 1, 5.74, 4.7304, 1.71, 1846, .8282, 627.1999, 494.2, 8.278,
-            1.5391, 1677, 7.3044, 23, .543, 36.0127, 7.0707, 15.8, 2.7, 9600, 3.33771,
-            8.7, 14.9912, 7.7, .6255, 7.124, 1.9724, 5.65822, 627.1999, .6255, 309.214,
-            1, 7.75473, 237.23, 74.147, 42.75, 8100, 3000, .3083, .749481, 4.12, 37.4,
-            0.708, 150, .3062, 1502, 38.3892, 3.8, 9.6287, 25.245, 1.87539, 7.83101, 52,
-            37.8501, 3.9525, 190.788, 15180.2, 24.43, 3.7501, 1.72929, 43.9642, 6.25845,
-            1190.15, 158.34, 5.282, 8.54477, 32.77, 37.1414, 6.1764, 401500, 596, 2447.7
+                1, .625461, 1.46712, 1.86125, 6.24238, 121.907, 2.09715, 1842.64, 1.51645,
+                1.54208, 65.3851, 0.998, 540.92, 13.0949, 3977, 1, .3757, 48.65, 2, 248000,
+                38.3892, 1, 5.74, 4.7304, 1.71, 1846, .8282, 627.1999, 494.2, 8.278,
+                1.5391, 1677, 7.3044, 23, .543, 36.0127, 7.0707, 15.8, 2.7, 9600, 3.33771,
+                8.7, 14.9912, 7.7, .6255, 7.124, 1.9724, 5.65822, 627.1999, .6255, 309.214,
+                1, 7.75473, 237.23, 74.147, 42.75, 8100, 3000, .3083, .749481, 4.12, 37.4,
+                0.708, 150, .3062, 1502, 38.3892, 3.8, 9.6287, 25.245, 1.87539, 7.83101, 52,
+                37.8501, 3.9525, 190.788, 15180.2, 24.43, 3.7501, 1.72929, 43.9642, 6.25845,
+                1190.15, 158.34, 5.282, 8.54477, 32.77, 37.1414, 6.1764, 401500, 596, 2447.7
         };
 
         String[] currencies = {
-            "Dollars", "Pounds", "Dollars", "Deutsche Marks", "Francs", "Yen", "Guilders",
-            "Lira", "Francs", "Dollars", "Dinars", "Pesos", "Dram", "Schillings", "Manat",
-            "Dollars", "Dinar", "Taka", "Dollars", "Rouble", "Francs", "Dollars",
-            "Boliviano", "Pula", "Real", "Lev", "Dollars", "Franc", "Pesos", "Yuan Renmimbi",
-            "Dollars", "Pesos", "Kuna", "Pesos", "Pounds", "Koruna", "Kroner", "Pesos",
-            "Dollars", "Sucre", "Pounds", "Colon", "Kroon", "Birr", "Pound", "Krone", "Dollars",
-            "Markka", "Franc", "Pound", "Drachmas", "Dollars", "Dollars", "Forint", "Krona",
-            "Rupees", "Rupiah", "Rial", "Dinar", "Punt", "Shekels", "Dollars", "Dinar", "Tenge",
-            "Dinar", "Pounds", "Francs", "Ringgit", "Pesos", "Rupees", "Dollars", "Kroner",
-            "Rupees", "Pesos", "Zloty", "Escudo", "Leu", "Rubles", "Riyal", "Dollars", "Koruna",
-            "Rand", "Won", "Pesetas", "Dinar", "Krona", "Dollars", "Baht", "Dollars", "Lira",
-            "Bolivar", "Kwacha"
+                "Dollars", "Pounds", "Dollars", "Deutsche Marks", "Francs", "Yen", "Guilders",
+                "Lira", "Francs", "Dollars", "Dinars", "Pesos", "Dram", "Schillings", "Manat",
+                "Dollars", "Dinar", "Taka", "Dollars", "Rouble", "Francs", "Dollars",
+                "Boliviano", "Pula", "Real", "Lev", "Dollars", "Franc", "Pesos", "Yuan Renmimbi",
+                "Dollars", "Pesos", "Kuna", "Pesos", "Pounds", "Koruna", "Kroner", "Pesos",
+                "Dollars", "Sucre", "Pounds", "Colon", "Kroon", "Birr", "Pound", "Krone", "Dollars",
+                "Markka", "Franc", "Pound", "Drachmas", "Dollars", "Dollars", "Forint", "Krona",
+                "Rupees", "Rupiah", "Rial", "Dinar", "Punt", "Shekels", "Dollars", "Dinar", "Tenge",
+                "Dinar", "Pounds", "Francs", "Ringgit", "Pesos", "Rupees", "Dollars", "Kroner",
+                "Rupees", "Pesos", "Zloty", "Escudo", "Leu", "Rubles", "Riyal", "Dollars", "Koruna",
+                "Rand", "Won", "Pesetas", "Dinar", "Krona", "Dollars", "Baht", "Dollars", "Lira",
+                "Bolivar", "Kwacha"
         };
 
         if (numCountries > countriesNames.length) {
@@ -822,7 +914,8 @@ public class Populator implements BenchmarkPopulator {
         }
 
 
-        System.out.println("Inserting Countries: " + numCountries);
+        System.out.println(">>Inserting " + numCountries + " countries || populatores " + num_threads);
+
 
         for (int i = 0; i < numCountries; i++) {
 
@@ -830,7 +923,7 @@ public class Populator implements BenchmarkPopulator {
             //insert(exchanges[i], countriesNames[i], "Countries", "CO_EXCHANGE", writeConsitency);
             //insert(currencies[i], countriesNames[i], "Countries", "CO_CURRENCY", writeConsitency);
             Country country = new Country(countriesNames[i], countriesNames[i], exchanges[i], currencies[i]);
-            databaseInsert("INSERT Countries", countriesNames[i], "Countries", country,results);
+            databaseInsert(client, "INSERT_Countries", countriesNames[i], "Countries", country, results);
             this.countries.add(country.getCo_id());
         }
         if (debug) {
@@ -838,9 +931,12 @@ public class Populator implements BenchmarkPopulator {
         }
     }
 
-    /*******************
+
+    /**
+     * ****************
      * Orders and XACTS *
-     ********************/
+     * ******************
+     */
     public void insertOrder_and_CC_XACTS(int n) throws InterruptedException {
 
         int threads = num_threads;
@@ -855,6 +951,9 @@ public class Populator implements BenchmarkPopulator {
             int rest = n - (num_threads * sections);
             firstSection = sections + rest;
         }
+
+        System.out.println(">>Inserting " + n + " Orders .. || populatores " + num_threads);
+
 
         barrier = new CountDownLatch(threads);
 
@@ -877,10 +976,12 @@ public class Populator implements BenchmarkPopulator {
         }
         barrier.await();
 
-        for (Order_and_XACTSPopulator orderPopulator : partial_orders) {
-            results.addResults(orderPopulator.returnResults());
+        for (Order_and_XACTSPopulator populator : partial_orders) {
+            results.addResults(populator.returnResults());
+            populator.partial_results.cleanResults();
+            populator = null;
         }
-
+        System.gc();
 
     }
 
@@ -888,9 +989,11 @@ public class Populator implements BenchmarkPopulator {
 
         int num_orders;
         int begin_key;
+        CRUD.CRUDclient client;
         ResultHandler partial_results;
 
-        public Order_and_XACTSPopulator(int num_orders, int begin_key) {
+        public Order_and_XACTSPopulator(int begin_key, int num_orders) {
+            client = databaseClientFactory.getClient();
             this.num_orders = num_orders;
             this.begin_key = begin_key;
             partial_results = new ResultHandler("", rounds);
@@ -898,6 +1001,15 @@ public class Populator implements BenchmarkPopulator {
 
         public void run() {
             this.insertOrder_and_CC_XACTS(begin_key, num_orders);
+        }
+
+        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
+
+            long time1 = System.currentTimeMillis();
+            client.insert(key, path, value);
+            long time2 = System.currentTimeMillis();
+            results.logResult(Operation, time2 - time1);
+
         }
 
         public void insertOrder_and_CC_XACTS(int begin_key, int number_keys) {
@@ -932,8 +1044,6 @@ public class Populator implements BenchmarkPopulator {
                 String O_STATUS;
 
 
-
-
                 String costumer_id = costumers.get(rand.nextInt(costumers.size()));
 
                 O_C_ID = costumer_id;
@@ -961,15 +1071,15 @@ public class Populator implements BenchmarkPopulator {
                 O_STATUS = status_types[rand.nextInt(status_types.length)];
                 //insertInSuperColumn(O_STATUS, O_C_ID, column_family, O_ID + "", "O_STATUS", write_con);
 
-                String billAddress = addresses.get(BenchmarkUtil.getRandomInt(0, NUM_ADDRESSES));
+                String billAddress = addresses.get(BenchmarkUtil.getRandomInt(0, NUM_ADDRESSES - 1));
                 // insertInSuperColumn(billAddress.getAddr_id(), O_C_ID, column_family, O_ID + "", "O_BILL_ADDR_ID", write_con);
 
-                O_SHIP_ADDR = addresses.get(BenchmarkUtil.getRandomInt(0, NUM_ADDRESSES));
+                O_SHIP_ADDR = addresses.get(BenchmarkUtil.getRandomInt(0, NUM_ADDRESSES - 1));
                 // insertInSuperColumn(O_SHIP_ADDR.getAddr_id(), O_C_ID, column_family, O_ID + "", "O_SHIP_ADDR_ID", write_con);
 
                 Orders order = new Orders(O_ID, O_C_ID, O_DATE, O_SUB_TOTAL, O_TAX, O_TOTAL, O_SHIP_TYPE, O_SHIP_DATE, O_STATUS, billAddress, O_SHIP_ADDR);
 
-                databaseInsert("INSERT Orders", O_C_ID, column_family, order,partial_results);
+                databaseInsert("INSERT Orders", O_C_ID, column_family, order, partial_results);
                 //orders.add(order);
 
 
@@ -1010,10 +1120,9 @@ public class Populator implements BenchmarkPopulator {
                         //insertInSuperColumn(OL_COMMENT, O_ID + "", subcolumn_family, OL_ID, "OL_COMMENT", write_con);
                     }
                     OrderLine orderline = new OrderLine(OL_ID, order.getO_ID(), OL_I_ID, OL_QTY, OL_DISCOUNT, OL_COMMENT);
-                    databaseInsert("INSERT Orders Lines", O_ID + "", subcolumn_family, order,partial_results);
+                    databaseInsert("INSERT Orders Lines", O_ID + "", subcolumn_family, orderline, partial_results);
                     //orderLines.add(orderline);
                 }
-
 
 
                 String CX_TYPE;
@@ -1053,11 +1162,10 @@ public class Populator implements BenchmarkPopulator {
                 //        insert(country.getCo_id(), key, column_family, "CX_CO_ID", write_con);
 
 
-
                 CCXact ccXact = new CCXact(CX_TYPE, CX_NUM, CX_NAME, CX_EXPIRY,/* CX_AUTH_ID,*/ O_TOTAL,
                         O_SHIP_DATE, /* 1 + _counter, */ order.getO_ID(), country_id);
 
-                databaseInsert("INSERT CCXact", key, column_family, order,partial_results);
+                databaseInsert("INSERT_CCXact", key, column_family, order, partial_results);
 
                 O_ID++;
             }
@@ -1066,6 +1174,7 @@ public class Populator implements BenchmarkPopulator {
             }
 
             barrier.countDown();
+            client.closeClient();
 
         }
 
@@ -1076,7 +1185,9 @@ public class Populator implements BenchmarkPopulator {
 
     /************************************************************************/
     /************************************************************************/
-    /************************************************************************/
+    /**
+     * ********************************************************************
+     */
 //    public void ShowValues(String column_family) {
 //
 //        System.out.println("Show Values for Column family : " + column_family);
@@ -1174,7 +1285,7 @@ public class Populator implements BenchmarkPopulator {
                 Map<String, String> databaseInfo = map.get("BenchmarkInfo");
                 String databaseClass = databaseInfo.get("DataEngineInterface");
                 System.out.println("CHOSEN DATABASE ENGINE: " + databaseClass);
-                databaseClient = (CRUD) Class.forName(databaseClass).getConstructor().newInstance();
+                databaseClientFactory = (CRUD) Class.forName(databaseClass).getConstructor().newInstance();
 
                 if (!map.containsKey("LoadParameters")) {
                     System.out.println("WARNING: NO LOAD DEFINITIONS FOUND, NO DELAYS WILL BE USED , ONE THREAD USED");
@@ -1218,21 +1329,21 @@ public class Populator implements BenchmarkPopulator {
 //
 //        }
         /**
-        Patterns:
+         Patterns:
 
-        Pseudo-Altdeutsch
-        Menschlich Fantasy (Mann , Frau)
-        Götternamen
-        Dämonen
-        Griechisch
-        Spanisch
-        Italienisch
-        Irisch
-        Französisch
-        Polnisch
-        Hebräisch (Mann , Frau)
-        Orkisch
-        US-Zensus//english
+         Pseudo-Altdeutsch
+         Menschlich Fantasy (Mann , Frau)
+         Götternamen
+         Dämonen
+         Griechisch
+         Spanisch
+         Italienisch
+         Irisch
+         Französisch
+         Polnisch
+         Hebräisch (Mann , Frau)
+         Orkisch
+         US-Zensus//english
          *
          */
 //
@@ -1248,39 +1359,39 @@ public class Populator implements BenchmarkPopulator {
     }
 }
 /**
-try {
-ColumnOrSuperColumn scolumn = client.get(Keyspace, "all", path, write_con);
-SuperColumn super_column = scolumn.getSuper_column();
-Column column = super_column.columns.get(0);
-O_ID = (Long) BenchmarkUtil.toObject(column.value) + 1;
-insertInSuperColumn(O_ID, "all", column_family, "ids", "LAST_ID", write_con);
-} catch (TimedOutException ex) {
-Logger.getLogger(PopulateDatabase.class.getName()).log(Level.SEVERE, null, ex);
-} catch (InvalidRequestException ex) {
-Logger.getLogger(PopulateDatabase.class.getName()).log(Level.SEVERE, null, ex);
-O_ID = 0;
-} catch (NotFoundException ex) {
-O_ID = 0;
-insertInSuperColumn(O_ID, "all", column_family, "ids", "LAST_ID", write_con);
-Logger.getLogger(PopulateDatabase.class.getName()).log(Level.SEVERE, null, ex);
-} catch (UnavailableException ex) {
-Logger.getLogger(PopulateDatabase.class.getName()).log(Level.SEVERE, null, ex);
-} catch (TException ex) {
-Logger.getLogger(PopulateDatabase.class.getName()).log(Level.SEVERE, null, ex);
-}
+ try {
+ ColumnOrSuperColumn scolumn = client.get(Keyspace, "all", path, write_con);
+ SuperColumn super_column = scolumn.getSuper_column();
+ Column column = super_column.columns.get(0);
+ O_ID = (Long) BenchmarkUtil.toObject(column.value) + 1;
+ insertInSuperColumn(O_ID, "all", column_family, "ids", "LAST_ID", write_con);
+ } catch (TimedOutException ex) {
+ Logger.getLogger(PopulateDatabase.class.getName()).log(Level.SEVERE, null, ex);
+ } catch (InvalidRequestException ex) {
+ Logger.getLogger(PopulateDatabase.class.getName()).log(Level.SEVERE, null, ex);
+ O_ID = 0;
+ } catch (NotFoundException ex) {
+ O_ID = 0;
+ insertInSuperColumn(O_ID, "all", column_family, "ids", "LAST_ID", write_con);
+ Logger.getLogger(PopulateDatabase.class.getName()).log(Level.SEVERE, null, ex);
+ } catch (UnavailableException ex) {
+ Logger.getLogger(PopulateDatabase.class.getName()).log(Level.SEVERE, null, ex);
+ } catch (TException ex) {
+ Logger.getLogger(PopulateDatabase.class.getName()).log(Level.SEVERE, null, ex);
+ }
 
  *
  *
  *
  *
-try {
+ try {
 
-ColumnOrSuperColumn scolumn = client.get(Keyspace, "all", path, write_con);
-SuperColumn super_column = scolumn.getSuper_column();
-Column column = super_column.columns.get(0);
-O_ID = (Long) BenchmarkUtil.toObject(column.value);
-O_ID++;
-//new Long(new String(column.value)) + 1;
-insertInSuperColumn(O_ID, "all", "Orders", "ids", "LAST_ID", write_con);
+ ColumnOrSuperColumn scolumn = client.get(Keyspace, "all", path, write_con);
+ SuperColumn super_column = scolumn.getSuper_column();
+ Column column = super_column.columns.get(0);
+ O_ID = (Long) BenchmarkUtil.toObject(column.value);
+ O_ID++;
+ //new Long(new String(column.value)) + 1;
+ insertInSuperColumn(O_ID, "all", "Orders", "ids", "LAST_ID", write_con);
 
  **/
