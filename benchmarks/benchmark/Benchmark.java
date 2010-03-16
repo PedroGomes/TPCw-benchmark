@@ -9,7 +9,7 @@ import benchmarks.DatabaseEngineInterfaces.CassandraInterface;
 import benchmarks.helpers.JsonUtil;
 
 import benchmarks.interfaces.BenchmarkExecuter;
-import benchmarks.interfaces.BenchmarkInterface;
+import benchmarks.interfaces.BenchmarkInterfaceFactory;
 import benchmarks.interfaces.CRUD;
 import benchmarks.interfaces.BenchmarkPopulator;
 import java.io.BufferedReader;
@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 public class Benchmark {
 
     private CRUD databaseClient;
-    private BenchmarkInterface benchmarkClient;
+    private BenchmarkInterfaceFactory benchmarkClient;
     private BenchmarkPopulator populator;
     private BenchmarkExecuter executer;
     private int number_threads_populator;
@@ -106,16 +106,23 @@ public class Benchmark {
                 databaseClient = (CRUD) Class.forName(databaseClass).getConstructor().newInstance();
 
                 String benchmarkInterfaceClass = databaseInfo.get("BenchmarkEngineInterface");
-                System.out.println("CHOSEN BENCHMARK ENGINE: " + benchmarkInterfaceClass);
-                benchmarkClient = (BenchmarkInterface) Class.forName(benchmarkInterfaceClass).getConstructor().newInstance();
+                if(benchmarkInterfaceClass.equals(databaseClass)){
+                    System.out.println("CHOSEN BENCHMARK ENGINE IS EQUAL TO DATABASE ENGINE: SAME OBJECT USED");
+                    benchmarkClient  = (BenchmarkInterfaceFactory) databaseClient;
+                }
+                else{
+                    System.out.println("CHOSEN BENCHMARK ENGINE: " + benchmarkInterfaceClass);
+                    benchmarkClient = (BenchmarkInterfaceFactory) Class.forName(benchmarkInterfaceClass).getConstructor().newInstance();
+                }
+
 
 
                 String populatorClass = databaseInfo.get("BenchmarkPopulator");
                 System.out.println("CHOSEN BENCHMARK POPULATOR: " + populatorClass);
                 
 
-                String executerClass = databaseInfo.get("BenchmarkExecuter");
-                System.out.println("CHOSEN BENCHMARK EXECUTER: " +  executerClass);
+                String executorClass = databaseInfo.get("BenchmarkExecuter");
+                System.out.println("CHOSEN BENCHMARK EXECUTOR: " +  executorClass);
                 
 
                 if (!map.containsKey("BenchmarkPopulator")) {
@@ -162,10 +169,13 @@ public class Benchmark {
                 }
 
                 Object[] args = new Object[]{databaseClient,number_threads_populator,benchmarkPopulatorInfo};
-                populator = (BenchmarkPopulator) Class.forName(populatorClass).getConstructor().newInstance(args);
+                Class[] args_cl = new Class[]{CRUD.class,int.class,Map.class};
+                populator = (BenchmarkPopulator) Class.forName(populatorClass).getConstructor(args_cl).newInstance(args);
 
+
+                args_cl = new Class[]{CRUD.class, BenchmarkInterfaceFactory.class,int.class,Map.class};
                 args = new Object[]{databaseClient,benchmarkClient,number_threads_executer,benchmarkExecuterInfo};
-                executer = (BenchmarkExecuter) Class.forName(executerClass).getConstructor().newInstance(args);
+                executer = (BenchmarkExecuter) Class.forName(executorClass).getConstructor(args_cl).newInstance(args);
 
                 return true;
             }
@@ -185,7 +195,7 @@ public class Benchmark {
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(BenchmarkPopulator.class.getName()).log(Level.SEVERE, null, ex);
         }
-        System.out.println("ERROR: THERE IS SOME PROBLEM WITH THE DEFINITIONS FILE");
+        System.out.println("ERROR: THERE IS SOME PROBLEM WITH THE DEFINITIONS FILE OR THE LOADED INTERFACES");
         return false;
     }
 
