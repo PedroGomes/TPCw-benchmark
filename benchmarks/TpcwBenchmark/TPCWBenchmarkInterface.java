@@ -5,13 +5,15 @@
 
 package benchmarks.TpcwBenchmark;
 
+import benchmarks.interfaces.BenchmarkInterfaceFactory;
+
 import java.util.Map;
 
 /**
  *
  * @author pedro
  */
-public interface TPCWBenchmarkInterface extends benchmarks.interfaces.BenchmarkInterface{
+public interface TPCWBenchmarkInterface extends BenchmarkInterfaceFactory {
 
     public enum BuyingResult {
         BOUGHT, //Product bought
@@ -20,13 +22,18 @@ public interface TPCWBenchmarkInterface extends benchmarks.interfaces.BenchmarkI
         DOES_NOT_EXIST //debug result, the item does not exist
     };
 
-    public void searchTop10Books();
+    interface TPCWBenchmarkInterfaceClient extends BenchmarkInterfaceClient{
 
-    public void addToCart(int Cart, String item_id, int qty );
+       public void searchTop10Books();
 
-    public Map<String,Integer> readCart(int Cart);
-    
-    public BuyingResult BuyCartItem(String item_id,int qty);
+       public void addToCart(int Cart, String item_id, int qty );
+
+       public Map<String,Integer> readCart(int Cart);
+
+       public BuyingResult BuyCartItem(String item_id,int qty); 
+    }
+
+
 
     
 }
