@@ -7,6 +7,7 @@ package benchmarks.DatabaseEngineInterfaces;
 import benchmarks.helpers.JsonUtil;
 
 import benchmarks.helpers.BenchmarkUtil;
+import benchmarks.interfaces.BenchmarkInterfaceFactory;
 import benchmarks.interfaces.CRUD;
 import benchmarks.interfaces.Entity;
 
@@ -20,22 +21,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.cassandra.service.*;
 import org.apache.cassandra.service.Cassandra.Client;
-import org.apache.cassandra.service.Column;
-import org.apache.cassandra.service.ColumnOrSuperColumn;
-import org.apache.cassandra.service.ColumnParent;
-import org.apache.cassandra.service.ColumnPath;
-import org.apache.cassandra.service.ConsistencyLevel;
-import org.apache.cassandra.service.InvalidRequestException;
-import org.apache.cassandra.service.KeySlice;
-import org.apache.cassandra.service.NotFoundException;
-import org.apache.cassandra.service.SlicePredicate;
-import org.apache.cassandra.service.SliceRange;
-import org.apache.cassandra.service.TimedOutException;
-import org.apache.cassandra.service.UnavailableException;
 
 
 import org.apache.thrift.TException;
@@ -47,16 +39,16 @@ import org.apache.thrift.transport.TTransportException;
 /**
  * @author pedro
  */
-public class CassandraInterface implements CRUD {
+public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBenchmarkInterface {
 
     public String Keyspace = "Tpcw";
     int search_slice_ratio = 1000;
     // static Client client;
-    static ArrayList<Client> clients;
+    TreeMap<String, Integer> connections = new TreeMap<String, Integer>();
     Map<String, String> paths;
     //Map<String, ConsistencyLevel> consistencyLevels;
     int DEFAULT = ConsistencyLevel.QUORUM;
-    TreeMap<String, TreeMap<String, String>> keyMap;
+    ConcurrentMap<String, TreeMap<String, String>> keyMap;
     TreeMap<String, Integer> consistencyLevels;
 
 
@@ -80,7 +72,7 @@ public class CassandraInterface implements CRUD {
         consistencyLevels.put("DCQUORUMSYNC", 4);
         consistencyLevels.put("ALL", 5);
 
-        keyMap = new TreeMap<String, TreeMap<String, String>>();
+        keyMap = new ConcurrentHashMap<String, TreeMap<String, String>>();
 
         FileInputStream in = null;
         String jsonString_r = "";
@@ -140,8 +132,6 @@ public class CassandraInterface implements CRUD {
             Keyspace = CI.get("keyspace");
         }
 
-        TreeMap<String, Integer> connections = new TreeMap<String, Integer>();
-        clients = new ArrayList<Client>();
 
         if (!map.containsKey("DataBaseConnections")) {
             System.out.println("ERROR: NO CONNECTION INFO FOUND DEFAULTS ASSUMED: [HOST=localhost, PORT=9160] ");
@@ -158,37 +148,65 @@ public class CassandraInterface implements CRUD {
             connections.put("localhost", 9160);
         }
 
-        for (String host : connections.keySet()) {
-            try {
-                System.out.println("Connecting to host:" + host + ":port:" + connections.get(host));
-                TSocket socket = new TSocket(host, connections.get(host));
-                TProtocol prot = new TBinaryProtocol(socket);
-                Client c = new Client(prot);
-                socket.open();
-                clients.add(c);
-            } catch (TTransportException ex) {
-                Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
+
     }
 
-
-    public Client getCassandraClient() {
-        Random r = new Random();
-        Client c = clients.get(r.nextInt(clients.size()));
-        return c;
-    }
 
     public CRUDclient getClient() {
-        return null;
+        return new CassandraClient(paths, connections);
     }
 
-    class CassandraClient implements CRUDclient, benchmarks.TpcwBenchmark.TPCWBenchmarkInterface {
+    public BenchmarkInterfaceClient getBenchmarkClient() {
+        return new CassandraClient(paths, connections);
+    }
+
+    class CassandraClient implements CRUDclient, TPCWBenchmarkInterfaceClient {
+
+        TreeMap<String, Integer> connections = new TreeMap<String, Integer>();
+        private ArrayList<Client> clients;
+        Map<String, String> paths;
+
+        CassandraClient(Map<String, String> paths, TreeMap<String, Integer> connections) {
+            this.paths = paths;
+            this.connections = connections;
+            clients = new ArrayList<Client>();
+            for (String host : connections.keySet()) {
+                try {
+                //    System.out.println("Connecting to host:" + host + ":port:" + connections.get(host));
+                    TSocket socket = new TSocket(host, connections.get(host));
+                    TProtocol prot = new TBinaryProtocol(socket);
+                    Client c = new Client(prot);
+                    socket.open();
+                    clients.add(c);
+                } catch (TTransportException ex) {
+                    Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+
+        }
+
+        public Client getCassandraClient() {
+            Random r = new Random();
+            Client c = clients.get(r.nextInt(clients.size()));
+            return c;
+        }
+
+        public void closeClient() {
+            for (Client c : clients) {
+                c.getInputProtocol().getTransport().close();
+                c = null;
+            }
+            clients = null;
+            connections = null;
+            paths = null;
+            System.gc();
+        }
 
         /**
-         * ****************
+         * *****************
          * CRUD OPERATIONS *
-         * ****************
+         * *****************
          */
 
         public void insert(String key, String path, Entity value) {
@@ -230,23 +248,23 @@ public class CassandraInterface implements CRUD {
 
         public Object read(String key, String path, String column) {
 
-
+            Object result =  null;
             if (paths.containsKey(path)) {
                 String columnFamily = path;
                 String ColumnFamilyKey = keyMap.get(path).get(key);//what is the key for the supercolumnSet
 
-                readfromSuperColumn(ColumnFamilyKey, columnFamily, column, key, READ_CONSISTENCY_LEVEL);
+             result=   readfromSuperColumn(ColumnFamilyKey, columnFamily, column, key, READ_CONSISTENCY_LEVEL);
 
             } else {
-                readfromColumn(key, path, column, READ_CONSISTENCY_LEVEL);
+              result=   readfromColumn(key, path, column, READ_CONSISTENCY_LEVEL);
 
             }
-            return null;
+            return result;
         }
 
-        /**
-         * DATA BASE METHODS*
-         */
+        /*********************
+         * DATA BASE METHODS *
+         *********************/
         public void insert(Object value, String key, String column_family, String column, int writeConsistency) {
             try {
 
@@ -299,6 +317,7 @@ public class CassandraInterface implements CRUD {
         public Object readfromColumn(String key, String ColumnFamily, String column, int con) {
             try {
                 ColumnPath path = new ColumnPath();
+                path.setColumn_family(ColumnFamily);
                 path.setColumn(column.getBytes());
                 byte[] value = getCassandraClient().get(Keyspace, key, path, con).column.value;
                 Object o = BenchmarkUtil.toObject(value);
@@ -307,7 +326,7 @@ public class CassandraInterface implements CRUD {
             } catch (InvalidRequestException ex) {
                 Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
             } catch (NotFoundException ex) {
-                Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
+                return null;
             } catch (UnavailableException ex) {
                 Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
             } catch (TimedOutException ex) {
@@ -334,7 +353,7 @@ public class CassandraInterface implements CRUD {
             } catch (InvalidRequestException ex) {
                 Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
             } catch (NotFoundException ex) {
-                Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
+                return null;
             } catch (UnavailableException ex) {
                 Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
             } catch (TimedOutException ex) {
@@ -351,11 +370,13 @@ public class CassandraInterface implements CRUD {
          *                  The super column key will identify the Column FAmily key to lookup;
          */
         public void insertkey(String path, String ColumnKey, String SuperKey) {
+
+           if(path.equalsIgnoreCase("ShoppingCart")){
             if (!keyMap.containsKey(path)) {
                 keyMap.put(path, new TreeMap<String, String>());
             }
             keyMap.get(path).put(SuperKey, ColumnKey);
-
+           }
         }
 
         public void remove(String key, String columnFamily, String column) {
@@ -376,7 +397,6 @@ public class CassandraInterface implements CRUD {
                 Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-
 
         public void truncate(String column_family, int number_keys) {
             System.out.println("Removing ColumnFamily:" + column_family + "Number of keys: " + number_keys);
@@ -433,6 +453,7 @@ public class CassandraInterface implements CRUD {
             }
         }
 
+
         private List<ColumnOrSuperColumn> getAllColumnsfromCF(String path, String key, int consistencyLevel) {
 
             ColumnParent parent = new ColumnParent();
@@ -464,6 +485,7 @@ public class CassandraInterface implements CRUD {
 
             SlicePredicate predicate = new SlicePredicate();
             SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 300);
+            predicate.setSlice_range(range) ;
             try {
 
 
@@ -492,11 +514,11 @@ public class CassandraInterface implements CRUD {
             return null;
         }
 
+
         /**************************************/
-        /****  TPCW benchmark operations  *****/
-        /**
-         * **********************************
-         */
+        /****  TPCW benchmark operations  ****/
+        /************************************/
+
         public void searchTop10Books() {
             try {
                 String column_family = "Authors";
@@ -571,6 +593,7 @@ public class CassandraInterface implements CRUD {
 
         public void addToCart(int cart, String item, int qty_to_add) {
 
+
             Object o = readfromSuperColumn(cart + "", "ShoppingCart", "QTY", item, TRANSACTIONAL_CONSISTENCY_LEVEL);
             int qty = 0;
             if (o != null) {
@@ -586,15 +609,15 @@ public class CassandraInterface implements CRUD {
             if (o == null) {
                 return BuyingResult.DOES_NOT_EXIST;
             }
-            int stock = (Integer) o;
-            if (stock > 0) {
+            long stock = (Long) o;
+            if ((stock-qty) > 0) {
                 stock -= qty;
                 insert(stock, item, "Items", "I_STOCK", TRANSACTIONAL_CONSISTENCY_LEVEL);
                 Object new_o = readfromColumn(item, "Items", "I_STOCK", TRANSACTIONAL_CONSISTENCY_LEVEL);
                 if (new_o == null) {
                     return BuyingResult.DOES_NOT_EXIST;
                 }
-                int result = (Integer) new_o;
+                long result = (Long) new_o;
                 if (result < 0) {
                     return BuyingResult.OUT_OF_STOCK;
                 }
