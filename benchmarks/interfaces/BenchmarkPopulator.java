@@ -19,6 +19,8 @@ public  interface BenchmarkPopulator {
      */
     public boolean populate();
 
+    public void cleanDB();
+
     public  Map<String,Object> getUseFullData();
 
 }
