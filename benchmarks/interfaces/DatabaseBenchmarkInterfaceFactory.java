@@ -9,7 +9,7 @@ package benchmarks.interfaces;
  *
  * @author pedro
  */
-public interface BenchmarkInterfaceFactory {
+public interface DatabaseBenchmarkInterfaceFactory {
 
     public BenchmarkInterfaceClient getBenchmarkClient();
 
