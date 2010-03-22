@@ -5,7 +5,7 @@
 
 package benchmarks.TpcwBenchmark;
 
-import benchmarks.interfaces.BenchmarkInterfaceFactory;
+import benchmarks.interfaces.DatabaseBenchmarkInterfaceFactory;
 
 import java.util.Map;
 
@@ -13,7 +13,7 @@ import java.util.Map;
  *
  * @author pedro
  */
-public interface TPCWBenchmarkInterface extends BenchmarkInterfaceFactory {
+public interface TPCWBenchmarkInterface extends DatabaseBenchmarkInterfaceFactory {
 
     public enum BuyingResult {
         BOUGHT, //Product bought
