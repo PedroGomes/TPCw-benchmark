@@ -5,12 +5,10 @@
 package benchmarks.dataStatistics;
 
 import benchmarks.DatabaseEngineInterfaces.CassandraInterface;
+import benchmarks.helpers.Pair;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,26 +18,27 @@ import java.util.logging.Logger;
 public class ResultHandler {
 
     private int testsamples = 100;
-    String test_name;
-    private HashMap<String, ArrayList<Long>> results;
+    String test_name;                         //pair(time,result)
+    private HashMap<String, ArrayList<Pair<Long,Long>>> results;
     private HashMap<String, HashMap<String, Long>> events;
 
     /**
-     * @param run_data_divisions the devision in the data by runs. If -1 all will be inserted un the same run;
+     * @param run_data_divisions the division in the data by runs. If -1 all will be inserted un the same run;
      */
     public ResultHandler(String name, int run_data_divisions) {
         this.test_name = name;
         testsamples = run_data_divisions;
-        results = new HashMap<String, ArrayList<Long>>();
+        results = new  HashMap<String, ArrayList<Pair<Long,Long>>>();
         events = new HashMap<String, HashMap<String, Long>>();
     }
 
     public void logResult(String operation, long result) {
 
+        Pair<Long,Long> resultPair = new Pair<Long, Long>(System.currentTimeMillis(), result);
         if (!results.containsKey(operation)) {
-            results.put(operation, new ArrayList<Long>());
+            results.put(operation, new ArrayList<Pair<Long, Long>>());
         }
-        results.get(operation).add(result);
+        results.get(operation).add(resultPair);
     }
 
     public void countEvent(String eventType, String event, long number) {
@@ -67,13 +66,13 @@ public class ResultHandler {
 
     public void addResults(ResultHandler other_results) {
 
-        Map<String, ArrayList<Long>> new_results = other_results.results;
+        Map<String, ArrayList<Pair<Long,Long>>> new_results = other_results.results;
 
         for (String event_name : new_results.keySet()) {
             if (!this.results.containsKey(event_name)) {
                 this.results.put(event_name, new_results.get(event_name));
             } else {
-                for (Long l : new_results.get(event_name)) {
+                for (Pair<Long,Long> l : new_results.get(event_name)) {
                     this.results.get(event_name).add(l);
                 }
             }
@@ -105,7 +104,7 @@ public class ResultHandler {
         System.out.println("--runs: " + testsamples);
         for (String dataOperation : results.keySet()) {
             System.out.println("OPERATION: " + dataOperation);
-            ArrayList<Long> result_data = results.get(dataOperation);
+            ArrayList<Pair<Long,Long>> result_data = results.get(dataOperation);
             boolean do_multipleruns = testsamples < 0 ? false : true;
 
 
@@ -114,11 +113,11 @@ public class ResultHandler {
             int current_run = 0;
             int run = 0;
             ArrayList<Long> run_result = new ArrayList<Long>();
-            for (Long res : result_data) {
+            for (Pair<Long,Long> res : result_data) {
 
-                run_result.add(res);
-                total_amount += res;
-                currrent_amount += res;
+                run_result.add(res.right);
+                total_amount += res.right;
+                currrent_amount += res.right;
                 current_run += 1;
 
                 if (do_multipleruns && current_run == testsamples) {
@@ -148,8 +147,8 @@ public class ResultHandler {
                 System.out.println("Average: " + average);
                 double variance = 0.0;
                 long aux = 0;
-                for (Long run_res : result_data) {
-                    aux += Math.pow((run_res - average), 2);
+                for (Pair<Long,Long> run_res : result_data) {
+                    aux += Math.pow((run_res.right - average), 2);
                 }
                 variance = aux * (1d / (result_data.size() - 1d));
                 System.out.println("Variance: " + variance + "\n\n");
@@ -200,18 +199,16 @@ public class ResultHandler {
                 }
         }
         System.out.println("OUTPUT FOLDER: " + folder.getName());
+        resultComparator comparator =  new resultComparator();
         for (String dataOperation : results.keySet()) {
 
             System.out.println("OPERATION: " + dataOperation);
-            ArrayList<Long> result_data = results.get(dataOperation);
+            ArrayList<Pair<Long,Long>> result_data = results.get(dataOperation);
             boolean do_multipleruns = (testsamples < 0 && doMultiple) ? false : true;
 
 
-            int total_amount = 0;
-            int currrent_amount = 0;
             int current_run = 0;
             int run = 0;
-            ArrayList<Long> run_result = new ArrayList<Long>();
             File operation_results_file = new File(folder.getPath() +"/"+ dataOperation);
 
             FileOutputStream out = null;
@@ -227,25 +224,25 @@ public class ResultHandler {
 
             try {
                 if(!do_multipleruns) {
-                    stream.write(("results\n").getBytes());
+                    stream.write(("results , time  \n").getBytes());
                 }  else{
-                     stream.write(("results"+" , "+"run\n").getBytes());
+                     stream.write(("results , time , run\n").getBytes());
 
                 }
-
 
                 } catch (IOException e) {
                     e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
                 }
 
-            for (Long res : result_data) {
 
-                run_result.add(res);
-                total_amount += res;
-                currrent_amount += res;
+            int length = result_data.size();
+            for (int z =0;z<length;z++) {
+
+                Pair<Long,Long> res = result_data.get(z);
+
                 current_run += 1;
 
-                String result_line = res + "";
+                String result_line = res.right + " , "+res.left+"";
                 if (do_multipleruns) {
                     result_line = result_line + " , " + run;
                 }
@@ -318,7 +315,7 @@ public class ResultHandler {
                     }
 
 
-                }
+                }                                                      
 
             }
 
@@ -329,4 +326,33 @@ public class ResultHandler {
 
 
     }
+
+
+    class resultComparator implements Comparator {
+
+        public int compare(Object o1, Object o2) {
+
+            if(!(o1 instanceof Pair) ||!(o2 instanceof Pair))
+                return 0;
+
+            Pair<Long,Long> p1 = (Pair<Long, Long>) o1;
+            Pair<Long,Long> p2 = (Pair<Long, Long>) o2;
+
+            if (p1.left > p2.left)
+
+                return 1;
+
+            else if (p1.left < p2.left)
+
+                return -1;
+
+            else
+
+                return 0;
+        }
+    }
+
+
+    
 }
+
