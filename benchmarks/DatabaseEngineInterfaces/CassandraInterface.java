@@ -7,8 +7,7 @@ package benchmarks.DatabaseEngineInterfaces;
 import benchmarks.helpers.JsonUtil;
 
 import benchmarks.helpers.BenchmarkUtil;
-import benchmarks.interfaces.BenchmarkInterfaceFactory;
-import benchmarks.interfaces.CRUD;
+import benchmarks.interfaces.DataBaseCRUDInterface;
 import benchmarks.interfaces.Entity;
 
 import java.io.BufferedReader;
@@ -39,7 +38,7 @@ import org.apache.thrift.transport.TTransportException;
 /**
  * @author pedro
  */
-public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBenchmarkInterface {
+public class CassandraInterface implements DataBaseCRUDInterface, benchmarks.TpcwBenchmark.TPCWBenchmarkInterface {
 
     public String Keyspace = "Tpcw";
     int search_slice_ratio = 1000;
@@ -172,7 +171,7 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
             clients = new ArrayList<Client>();
             for (String host : connections.keySet()) {
                 try {
-                //    System.out.println("Connecting to host:" + host + ":port:" + connections.get(host));
+                    //    System.out.println("Connecting to host:" + host + ":port:" + connections.get(host));
                     TSocket socket = new TSocket(host, connections.get(host));
                     TProtocol prot = new TBinaryProtocol(socket);
                     Client c = new Client(prot);
@@ -205,30 +204,52 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
 
         /**
          * *****************
-         * CRUD OPERATIONS *
+         * DataBaseCRUDInterface OPERATIONS *
          * *****************
          */
 
-        public void insert(String key, String path, Entity value) {
+        public Map<String,Object> insert(String key, String path, Entity value) {
 
-            TreeMap<String, Object> fieldsToInsert = new TreeMap<String, Object>();
+            TreeMap<String, Object> fieldsToInsert;
             fieldsToInsert = value.getValuesToInsert();
 
+            String type;
+            long time_diferences = 0;
+            long t1, t2;
+
+
             if (paths.containsKey(path)) {
+                type = "SuperColumn";
                 String column = path;
                 String superColumnParameter = paths.get(path);
-                String ColumnFamilyKey = (String) (fieldsToInsert.get(superColumnParameter) + "");
+                String ColumnFamilyKey = (fieldsToInsert.get(superColumnParameter) + "");
                 insertkey(path, ColumnFamilyKey, key);
 
+
                 for (String valueName : fieldsToInsert.keySet()) {
+                    t1 = System.currentTimeMillis();
                     insertInSuperColumn(fieldsToInsert.get(valueName), ColumnFamilyKey, column, key, valueName, INSERT_CONSISTENCY_LEVEL);
+                    t2 = System.currentTimeMillis();
+                    time_diferences += (t2 - t1);
                 }
             } else {
+                type = "Column";
                 for (String valueName : fieldsToInsert.keySet()) {
+                    t1 = System.currentTimeMillis();
                     insert(fieldsToInsert.get(valueName), key, path, valueName, INSERT_CONSISTENCY_LEVEL);
+                    t2 = System.currentTimeMillis();
+                    time_diferences += (t2 - t1);
                 }
             }
+            long result = 0;
+            if (!fieldsToInsert.isEmpty())
+                result = time_diferences / fieldsToInsert.size();
 
+            TreeMap<String,Object> results = new TreeMap<String, Object>();
+            results.put(DataBaseCRUDInterface.TIME,result);
+            results.put(DataBaseCRUDInterface.TIME_TYPE,type);
+
+            return results;
         }
 
         public void update(String key, String path, String column, Object value) {
@@ -248,23 +269,95 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
 
         public Object read(String key, String path, String column) {
 
-            Object result =  null;
+            Object result = null;
             if (paths.containsKey(path)) {
                 String columnFamily = path;
                 String ColumnFamilyKey = keyMap.get(path).get(key);//what is the key for the supercolumnSet
 
-             result=   readfromSuperColumn(ColumnFamilyKey, columnFamily, column, key, READ_CONSISTENCY_LEVEL);
+                result = readfromSuperColumn(ColumnFamilyKey, columnFamily, column, key, READ_CONSISTENCY_LEVEL);
 
             } else {
-              result=   readfromColumn(key, path, column, READ_CONSISTENCY_LEVEL);
+                result = readfromColumn(key, path, column, READ_CONSISTENCY_LEVEL);
 
             }
             return result;
         }
 
-        /*********************
+        public List<Object> rangeQuery(String column_family, String field,  int limit) {
+
+
+            List<Object> results =  new ArrayList<Object>();
+            try {
+                SlicePredicate predicate = new SlicePredicate();
+                SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 300);
+
+                ColumnParent parent = new ColumnParent();
+                parent.setColumn_family(column_family);
+                predicate.setSlice_range(range);
+
+                String last_key = "";
+
+                boolean terminated =  false;
+                limit = (limit<0) ? -1 : limit;
+                int numer_keys = 0;
+
+                while (!terminated) {
+                    List<KeySlice> keys = getCassandraClient().get_range_slice(Keyspace, parent, predicate, last_key, "", search_slice_ratio, ConsistencyLevel.ONE);
+
+                    if (keys.isEmpty()) {
+                        System.out.println("The key range is empty");
+                    } else {
+                        last_key = keys.get(keys.size() - 1).key;
+                    }
+                    // Map<String, List<ColumnOrSuperColumn>> results = getCassandraClient().multiget_slice(Keyspace, keys, parent, predicate, ConsistencyLevel.ONE);
+                    ColumnPath path = new ColumnPath();
+                    path.setColumn_family(column_family);
+                    for (KeySlice key : keys) {
+                        if (!key.columns.isEmpty()) {
+                            for(ColumnOrSuperColumn c : key.getColumns()){                              
+                                if(c.isSetSuper_column()){
+                                      for(Column co : c.getSuper_column().columns ){
+                                          if(new String(co.getName()).equals(field))
+                                          results.add( BenchmarkUtil.toObject(co.getValue()));
+                                      }
+                                }
+                                else{
+                                  if(new String(c.getColumn().getName()).equals(field))
+                                  results.add( BenchmarkUtil.toObject(c.getColumn().getValue()));
+                                }
+
+
+                            }
+                        }
+                        numer_keys ++;
+                        if(numer_keys>=limit&&limit!=-1){
+                            terminated = true;
+                        }                    
+                    }
+                    if (keys.size() < search_slice_ratio) {
+                        terminated = true;
+                    }
+                }
+
+
+            } catch (TimedOutException ex) {
+                Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (InvalidRequestException ex) {
+                Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (UnavailableException ex) {
+                Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (TException ex) {
+                Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+            return results;  //To change body of implemented methods use File | Settings | File Templates.
+        }
+
+        /**
+         * ******************
          * DATA BASE METHODS *
-         *********************/
+         * *******************
+         */
         public void insert(Object value, String key, String column_family, String column, int writeConsistency) {
             try {
 
@@ -272,7 +365,7 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
                 path.setColumn_family(column_family);
                 path.setColumn(column.getBytes());
                 byte[] valueBytes = BenchmarkUtil.getBytes(value);
-
+                                     
                 getCassandraClient().insert(Keyspace, key, path, valueBytes, System.currentTimeMillis(), writeConsistency);
                 // simple_time += time;  s
                 // simple_inserts++;
@@ -371,12 +464,12 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
          */
         public void insertkey(String path, String ColumnKey, String SuperKey) {
 
-           if(path.equalsIgnoreCase("ShoppingCart")){
-            if (!keyMap.containsKey(path)) {
-                keyMap.put(path, new TreeMap<String, String>());
+            if (path.equalsIgnoreCase("ShoppingCart")) {
+                if (!keyMap.containsKey(path)) {
+                    keyMap.put(path, new TreeMap<String, String>());
+                }
+                keyMap.get(path).put(SuperKey, ColumnKey);
             }
-            keyMap.get(path).put(SuperKey, ColumnKey);
-           }
         }
 
         public void remove(String key, String columnFamily, String column) {
@@ -398,8 +491,9 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
             }
         }
 
-        public void truncate(String column_family, int number_keys) {
-            System.out.println("Removing ColumnFamily:" + column_family + "Number of keys: " + number_keys);
+        public void truncate(String column_family) {
+
+            System.out.println("Removing ColumnFamily:" + column_family);
             try {
 
                 SlicePredicate predicate = new SlicePredicate();
@@ -407,18 +501,13 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
 
                 ColumnParent parent = new ColumnParent();
                 parent.setColumn_family(column_family);
-
-
                 predicate.setSlice_range(range);
 
                 String last_key = "";
 
-                float f = number_keys / search_slice_ratio;
-                int cycles = (int) Math.floor(f) + 1;
-                System.out.println("Cycles: " + cycles);
+                boolean terminated =  false;
 
-                for (int cy = 0; cy < cycles; cy++) {
-                    int i = 0;
+                while (!terminated) {
                     List<KeySlice> keys = getCassandraClient().get_range_slice(Keyspace, parent, predicate, last_key, "", search_slice_ratio, ConsistencyLevel.ONE);
 
                     if (keys.isEmpty()) {
@@ -432,12 +521,10 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
                     for (KeySlice key : keys) {
                         if (!key.columns.isEmpty()) {
                             getCassandraClient().remove(Keyspace, key.key, path, System.currentTimeMillis(), DEFAULT);
-                            i++;
                         }
                     }
-                    System.out.println("cycle " + cy + " with " + i + " alive keys in " + keys.size());
                     if (keys.size() < search_slice_ratio) {
-                        break;
+                        terminated = true;
                     }
                 }
 
@@ -485,7 +572,7 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
 
             SlicePredicate predicate = new SlicePredicate();
             SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 300);
-            predicate.setSlice_range(range) ;
+            predicate.setSlice_range(range);
             try {
 
 
@@ -610,7 +697,7 @@ public class CassandraInterface implements CRUD, benchmarks.TpcwBenchmark.TPCWBe
                 return BuyingResult.DOES_NOT_EXIST;
             }
             long stock = (Long) o;
-            if ((stock-qty) > 0) {
+            if ((stock - qty) > 0) {
                 stock -= qty;
                 insert(stock, item, "Items", "I_STOCK", TRANSACTIONAL_CONSISTENCY_LEVEL);
                 Object new_o = readfromColumn(item, "Items", "I_STOCK", TRANSACTIONAL_CONSISTENCY_LEVEL);
