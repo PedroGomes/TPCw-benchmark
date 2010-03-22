@@ -5,16 +5,23 @@
 
 package benchmarks.interfaces;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author pedro
  */
-public interface CRUD {
+public interface DataBaseCRUDInterface {
+
+    public static final String OBJECT ="OBJ";
+    public static final String TIME ="TI";
+    public static final String TIME_TYPE ="TTY";
 
     public CRUDclient getClient();
 
     interface CRUDclient {
 
-        public void insert(String key, String path, Entity value);
+        public Map<String,Object> insert(String key, String path, Entity value);
 
         public void remove(String key, String path, String column);
 
@@ -22,7 +29,9 @@ public interface CRUD {
 
         public Object read(String key, String path, String column);
 
-        public void truncate(String path, int number_keys);
+        public List<Object> rangeQuery(String table,String field ,int limit);
+
+        public void truncate(String path);
 
         public void closeClient();
     }
