@@ -4,9 +4,10 @@
  */
 package benchmarks.TpcwBenchmark;
 
-import JaNaG_Source.de.beimax.janag.Namegenerator;
+//import JaNaG_Source.de.beimax.janag.Namegenerator;
+
 import benchmarks.helpers.BenchmarkUtil;
-import benchmarks.interfaces.CRUD;
+import benchmarks.interfaces.DataBaseCRUDInterface;
 
 import java.io.FileNotFoundException;
 import java.lang.reflect.InvocationTargetException;
@@ -69,7 +70,7 @@ public class Populator implements BenchmarkPopulator {
     private static /* final */ int NUM_ORDERS = (int) (.9 * NUM_CUSTOMERS);
     private static /* final */ int NUM_COUNTRIES = 92; // this is constant. Never changes!
     // static Client client;
-    private static CRUD databaseClientFactory;
+    private static DataBaseCRUDInterface databaseClientFactory;
     ArrayList<String> authors = new ArrayList<String>();
     ArrayList<String> addresses = new ArrayList<String>();
     ArrayList<String> countries = new ArrayList<String>();
@@ -84,7 +85,7 @@ public class Populator implements BenchmarkPopulator {
 
     //databaseClient,number_threads_populator,benchmarkPopulatorInfo
 
-    public Populator(CRUD databaseCrudClient, int clients, Map<String, String> info) {
+    public Populator(DataBaseCRUDInterface databaseCrudClient, int clients, Map<String, String> info) {
 
         databaseClientFactory = databaseCrudClient;
         num_threads = clients;
@@ -93,8 +94,8 @@ public class Populator implements BenchmarkPopulator {
         delay_inserts = Boolean.valueOf(do_delays.trim());
         String delay_time_info = info.get("delay_time");
         delay_time = Integer.valueOf(delay_time_info.trim());
-        String rounds_info = info.get("rounds");
 
+        String rounds_info = info.get("rounds");
         if (rounds_info != null) {
             rounds = Integer.valueOf(rounds_info.trim());
         } else {
@@ -104,6 +105,25 @@ public class Populator implements BenchmarkPopulator {
 
         result_path = info.get("result_path");
 
+        String ebs = info.get("tpcw_numEBS");
+        if (ebs != null) {
+            NUM_EBS = Integer.valueOf(ebs.trim());
+        } else {
+            System.out.println("SCALE FACTOR (EBS) NOT DEFINED. SET TO: " + NUM_EBS);
+        }
+
+        String items = info.get("tpcw_numItems");
+
+        if (items != null) {
+            NUM_ITEMS = Integer.valueOf(items.trim());
+        } else {
+            System.out.println("NUMBER OF ITEMS NOT DEFINED. SET TO: " + NUM_ITEMS);
+        }
+
+        NUM_CUSTOMERS = NUM_EBS * 2880;
+        NUM_ADDRESSES = 2 * NUM_CUSTOMERS;
+        NUM_AUTHORS = (int) (.25 * NUM_ITEMS);
+        NUM_ORDERS = (int) (.9 * NUM_CUSTOMERS);
     }
 
     //  /**
@@ -117,18 +137,24 @@ public class Populator implements BenchmarkPopulator {
 //
 //    }
 
-
-    public void databaseInsert(CRUD.CRUDclient client, String Operation, String key, String path, Entity value, ResultHandler results) {
+    public void databaseInsert(DataBaseCRUDInterface.CRUDclient client, String Operation, String key, String path, Entity value, ResultHandler results) {
 
         long time1 = System.currentTimeMillis();
-        client.insert(key, path, value);
+        Map result = client.insert(key, path, value);
         long time2 = System.currentTimeMillis();
         results.logResult(Operation, time2 - time1);
-
+        if (result.get(DataBaseCRUDInterface.TIME_TYPE).equals("SuperColumn"))
+            results.logResult("WRITE_SUPER", (Long) result.get(DataBaseCRUDInterface.TIME));
+        else
+            results.logResult("WRITE", (Long) result.get(DataBaseCRUDInterface.TIME));
     }
 
     public boolean populate() {
 
+
+        DataBaseCRUDInterface.CRUDclient client = databaseClientFactory.getClient();
+        client.truncate("ShoppingCart");
+        client.closeClient();
 
         if (error) {
             return false;
@@ -174,6 +200,10 @@ public class Populator implements BenchmarkPopulator {
         }
     }
 
+    public void cleanDB() {
+            removeALL();
+    }
+
     public Map<String, Object> getUseFullData() {
         TreeMap<String, Object> data = new TreeMap<String, Object>();
         data.put("ITEMS", items);
@@ -183,15 +213,15 @@ public class Populator implements BenchmarkPopulator {
 
     public void removeALL() {
 
-        CRUD.CRUDclient client = databaseClientFactory.getClient();
-        client.truncate("Costumer", 70000);
-        client.truncate("Items", NUM_ITEMS);
-        client.truncate("Orders", NUM_ORDERS);
-        client.truncate("OrderLines", NUM_ORDERS * 5);
-        client.truncate("Author", NUM_AUTHORS);
-        client.truncate("Countries", NUM_COUNTRIES);
-        client.truncate("Addresses", 180000);
-
+        DataBaseCRUDInterface.CRUDclient client = databaseClientFactory.getClient();
+        client.truncate("Costumer");
+        client.truncate("Items");
+        client.truncate("Orders");
+        client.truncate("OrderLines");
+        client.truncate("CC_XACTS");
+        client.truncate("Author");
+        client.truncate("Countries");
+        client.truncate("Addresses");
     }
 
 
@@ -252,7 +282,7 @@ public class Populator implements BenchmarkPopulator {
     class AuthorPopulator implements Runnable {
 
         int num_authors;
-        CRUD.CRUDclient client;
+        DataBaseCRUDInterface.CRUDclient client;
         ArrayList<String> partial_authors;
         ResultHandler partial_results;
 
@@ -271,22 +301,25 @@ public class Populator implements BenchmarkPopulator {
         public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
 
             long time1 = System.currentTimeMillis();
-            client.insert(key, path, value);
+            Map result = client.insert(key, path, value);
             long time2 = System.currentTimeMillis();
             results.logResult(Operation, time2 - time1);
+            if (result.get(DataBaseCRUDInterface.TIME_TYPE).equals("SuperColumn"))
+                results.logResult("WRITE_SUPER", (Long) result.get(DataBaseCRUDInterface.TIME));
+            else
+                results.logResult("WRITE", (Long) result.get(DataBaseCRUDInterface.TIME));
 
         }
 
         public void insertAuthors(int n) {
 
-            Namegenerator ng = new Namegenerator("src/JaNaG_Source/languages.txt", "src/JaNaG_Source/semantics.txt");
 
             System.out.println("Inserting Authors: " + n);
             for (int i = 0; i < n; i++) {
                 GregorianCalendar cal = BenchmarkUtil.getRandomDate(1800, 1990);
 
-                String[] names = (ng.getRandomName("US-Zensus", "Männlich Top 500+")).split(" ");
-                String[] Mnames = (ng.getRandomName("US-Zensus", "Männlich Top 500+")).split(" ");
+                String[] names = (BenchmarkUtil.getRandomAString(3, 20) + " " + BenchmarkUtil.getRandomAString(2, 20)).split(" ");
+                String[] Mnames = ("d " + BenchmarkUtil.getRandomAString(2, 20)).split(" ");
 
                 String first_name = names[0];
                 String last_name = names[1];
@@ -323,6 +356,9 @@ public class Populator implements BenchmarkPopulator {
             return partial_results;
         }
     }
+
+
+
 
     /**
      * ************
@@ -378,7 +414,7 @@ public class Populator implements BenchmarkPopulator {
 
     class CostumerPopulator implements Runnable {
 
-        CRUD.CRUDclient client;
+        DataBaseCRUDInterface.CRUDclient client;
         int num_costumers;
         ArrayList<String> partial_costumers;
         ResultHandler partial_results;
@@ -397,12 +433,11 @@ public class Populator implements BenchmarkPopulator {
 
         public void insertCostumers(int n) {
 
-            Namegenerator ng = new Namegenerator("src/JaNaG_Source/languages.txt", "src/JaNaG_Source/semantics.txt");
 
             System.out.println("Inserting Costumers: " + n);
             for (int i = 0; i < n; i++) {
 
-                String name = ng.getRandomName("US-Zensus", "Männlich Top 500+");
+                String name = (BenchmarkUtil.getRandomAString(8, 15) + " " + BenchmarkUtil.getRandomAString(8, 15));
                 String[] names = name.split(" ");
                 Random r = new Random();
                 int random_int = r.nextInt(1000);
@@ -421,13 +456,13 @@ public class Populator implements BenchmarkPopulator {
                 int phone = r.nextInt(999999999 - 100000000) + 100000000;
                 //  insert(phone, key, "Costumer", "C_PHONE", writeCon);
 
-                String email = key + "@email.com";
+                String email = key + "@" + BenchmarkUtil.getRandomAString(2, 9) + ".com";
                 //  insert(email, key, "Costumer", "C_EMAIL", writeCon);
 
                 double discount = r.nextDouble();
                 //  insert(discount, key, "Costumer", "C_DISCOUNT", writeCon);
 
-                String adress = "Street: " + ng.getRandomName("US-Zensus", "Weiblich Ungewöhnlich") + " number: " + r.nextInt(500);
+                String adress = "Street: " + (BenchmarkUtil.getRandomAString(8, 15) + " " + BenchmarkUtil.getRandomAString(8, 15)) + " number: " + r.nextInt(500);
                 //  insert(adress, key, "Costumer", "C_PHONE", writeCon);
 
 
@@ -498,9 +533,13 @@ public class Populator implements BenchmarkPopulator {
         public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
 
             long time1 = System.currentTimeMillis();
-            client.insert(key, path, value);
+            Map result = client.insert(key, path, value);
             long time2 = System.currentTimeMillis();
             results.logResult(Operation, time2 - time1);
+            if (result.get(DataBaseCRUDInterface.TIME_TYPE).equals("SuperColumn"))
+                results.logResult("WRITE_SUPER", (Long) result.get(DataBaseCRUDInterface.TIME));
+            else
+                results.logResult("WRITE", (Long) result.get(DataBaseCRUDInterface.TIME));
 
         }
 
@@ -560,7 +599,7 @@ public class Populator implements BenchmarkPopulator {
     class ItemPopulator implements Runnable {
 
 
-        CRUD.CRUDclient client;
+        DataBaseCRUDInterface.CRUDclient client;
         int num_items;
         ArrayList<String> partial_items;
         ResultHandler partial_results;
@@ -589,20 +628,16 @@ public class Populator implements BenchmarkPopulator {
                     "LIMITED-EDITION"};
 
 
-            Namegenerator ng = new Namegenerator("src/JaNaG_Source/languages.txt", "src/JaNaG_Source/semantics.txt");
-
-
             String column_family = "Items";
 
             System.out.println("Inserting Items: " + n);
 
             ArrayList<String> titles = new ArrayList<String>();
             for (int i = 0; i < n; i++) {
-                boolean rad1 = rand.nextBoolean();
-                String f_name = rad1 ? ng.getRandomName("Menschlich Fantasy", "Mann") : ng.getRandomName("Menschlich Fantasy", "Frau");
-                String l_name = rad1 ? ng.getRandomName("Hebräisch", "Mann") : ng.getRandomName("Hebräisch", "Frau");
+
+                String f_name = BenchmarkUtil.getRandomAString(14, 60);
                 int num = rand.nextInt(1000);
-                titles.add(f_name + " and " + l_name + " " + num);
+                titles.add(f_name + " " + num);
             }
 
             for (int i = 0; i < n; i++) {
@@ -624,20 +659,18 @@ public class Populator implements BenchmarkPopulator {
                 int author_pos = rand.nextInt(authors.size());
                 String author = authors.get(author_pos);
 
-                boolean rad1 = rand.nextBoolean();
-                I_AUTHOR = rad1 ? ng.getRandomName("Götternamen", "Gott") : ng.getRandomName("Götternamen", "Göttin");
+
+                I_AUTHOR = (BenchmarkUtil.getRandomAString(8, 15) + " " + BenchmarkUtil.getRandomAString(8, 15));
                 //     insert(I_AUTHOR, I_TITLE, column_family, "I_AUTHOR", writeCon);
 
 
-                rad1 = rand.nextBoolean();
-                I_PUBLISHER = rad1 ? ng.getRandomName("Polnisch", "Mann") : ng.getRandomName("Polnisch", "Frau");
+                I_PUBLISHER = BenchmarkUtil.getRandomAString(14, 60);
                 //    insert(I_PUBLISHER, I_TITLE, column_family, "I_PUBLISHER", writeCon);
 
-                rad1 = rand.nextBoolean();
+                boolean rad1 = rand.nextBoolean();
                 I_DESC = null;
                 if (rad1) {
-                    boolean rad2 = rand.nextBoolean();
-                    I_DESC = rad2 ? ng.getRandomName("Spanisch", "Mann") : ng.getRandomName("Spanisch", "Frau");
+                    I_DESC = BenchmarkUtil.getRandomAString(100, 500);
                     //      insert(I_DESC, I_TITLE, column_family, "I_DESC", writeCon);
                 }
 
@@ -706,10 +739,13 @@ public class Populator implements BenchmarkPopulator {
         public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
 
             long time1 = System.currentTimeMillis();
-            client.insert(key, path, value);
+            Map result = client.insert(key, path, value);
             long time2 = System.currentTimeMillis();
             results.logResult(Operation, time2 - time1);
-
+            if (result.get(DataBaseCRUDInterface.TIME_TYPE).equals("SuperColumn"))
+                results.logResult("WRITE_SUPER", (Long) result.get(DataBaseCRUDInterface.TIME));
+            else
+                results.logResult("WRITE", (Long) result.get(DataBaseCRUDInterface.TIME));
         }
 
         public ArrayList<String> getData() {
@@ -770,7 +806,7 @@ public class Populator implements BenchmarkPopulator {
             populator.partial_results.cleanResults();
             populator = null;
         }
-        partial_addresses =  null;
+        partial_addresses = null;
         System.gc();
 
     }
@@ -778,7 +814,7 @@ public class Populator implements BenchmarkPopulator {
     class AddressPopulator implements Runnable {
 
         int num_addresses;
-        CRUD.CRUDclient client;
+        DataBaseCRUDInterface.CRUDclient client;
         ArrayList<String> partial_adresses;
         ResultHandler partial_results;
 
@@ -796,10 +832,13 @@ public class Populator implements BenchmarkPopulator {
         public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
 
             long time1 = System.currentTimeMillis();
-            client.insert(key, path, value);
+            Map result = client.insert(key, path, value);
             long time2 = System.currentTimeMillis();
             results.logResult(Operation, time2 - time1);
-
+            if (result.get(DataBaseCRUDInterface.TIME_TYPE).equals("SuperColumn"))
+                results.logResult("WRITE_SUPER", (Long) result.get(DataBaseCRUDInterface.TIME));
+            else
+                results.logResult("WRITE", (Long) result.get(DataBaseCRUDInterface.TIME));
         }
 
         private void insertAddress(int n) {
@@ -861,7 +900,7 @@ public class Populator implements BenchmarkPopulator {
      */
     private void insertCountries(int numCountries) {
 
-        CRUD.CRUDclient client;
+        DataBaseCRUDInterface.CRUDclient client;
         client = databaseClientFactory.getClient();
 
         String[] countriesNames = {
@@ -989,7 +1028,7 @@ public class Populator implements BenchmarkPopulator {
 
         int num_orders;
         int begin_key;
-        CRUD.CRUDclient client;
+        DataBaseCRUDInterface.CRUDclient client;
         ResultHandler partial_results;
 
         public Order_and_XACTSPopulator(int begin_key, int num_orders) {
@@ -1006,10 +1045,13 @@ public class Populator implements BenchmarkPopulator {
         public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
 
             long time1 = System.currentTimeMillis();
-            client.insert(key, path, value);
+            Map result = client.insert(key, path, value);
             long time2 = System.currentTimeMillis();
             results.logResult(Operation, time2 - time1);
-
+            if (result.get(DataBaseCRUDInterface.TIME_TYPE).equals("SuperColumn"))
+                results.logResult("WRITE_SUPER", (Long) result.get(DataBaseCRUDInterface.TIME));
+            else
+                results.logResult("WRITE", (Long) result.get(DataBaseCRUDInterface.TIME));
         }
 
         public void insertOrder_and_CC_XACTS(int begin_key, int number_keys) {
@@ -1019,7 +1061,6 @@ public class Populator implements BenchmarkPopulator {
 
             String column_family = "Orders";
             String subcolumn_family = "OrderLines";
-            Namegenerator ng = new Namegenerator("src/JaNaG_Source/languages.txt", "src/JaNaG_Source/semantics.txt");
             String[] credit_cards = {"VISA", "MASTERCARD", "DISCOVER", "AMEX", "DINERS"};
             String[] ship_types = {"AIR", "UPS", "FEDEX", "SHIP", "COURIER", "MAIL"};
             String[] status_types = {"PROCESSING", "SHIPPED", "PENDING", "DENIED"};
@@ -1285,7 +1326,7 @@ public class Populator implements BenchmarkPopulator {
                 Map<String, String> databaseInfo = map.get("BenchmarkInfo");
                 String databaseClass = databaseInfo.get("DataEngineInterface");
                 System.out.println("CHOSEN DATABASE ENGINE: " + databaseClass);
-                databaseClientFactory = (CRUD) Class.forName(databaseClass).getConstructor().newInstance();
+                databaseClientFactory = (DataBaseCRUDInterface) Class.forName(databaseClass).getConstructor().newInstance();
 
                 if (!map.containsKey("LoadParameters")) {
                     System.out.println("WARNING: NO LOAD DEFINITIONS FOUND, NO DELAYS WILL BE USED , ONE THREAD USED");
