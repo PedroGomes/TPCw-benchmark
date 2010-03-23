@@ -9,9 +9,10 @@ import benchmarks.DatabaseEngineInterfaces.CassandraInterface;
 import benchmarks.helpers.JsonUtil;
 
 import benchmarks.interfaces.BenchmarkExecuter;
-import benchmarks.interfaces.BenchmarkInterfaceFactory;
-import benchmarks.interfaces.CRUD;
+import benchmarks.interfaces.DatabaseBenchmarkInterfaceFactory;
+import benchmarks.interfaces.DataBaseCRUDInterface;
 import benchmarks.interfaces.BenchmarkPopulator;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -24,40 +25,88 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
  * @author pedro
  */
 public class Benchmark {
 
-    private CRUD databaseClient;
-    private BenchmarkInterfaceFactory benchmarkClient;
+    private DataBaseCRUDInterface databaseCRUDClient;
+    private DatabaseBenchmarkInterfaceFactory databaseBenchmarkClient;
     private BenchmarkPopulator populator;
     private BenchmarkExecuter executer;
     private int number_threads_populator;
     private int number_threads_executer;
-    private TreeMap<String,String> benchmarkPopulatorInfo;
-    private TreeMap<String,String> benchmarkExecuterInfo;
+    private TreeMap<String, String> benchmarkPopulatorInfo;
+    private TreeMap<String, String> benchmarkExecuterInfo;
+    private Map<String, String> benchmarkExecuterSlaves;
 
     public static void main(String[] args) {
-        new Benchmark();
+
+        boolean populate = false;
+        boolean cleanDB = false;
+        boolean slave = false;
+        boolean master = false;
+        for (String arg : args) {
+
+            if (arg.equalsIgnoreCase("-p")) {
+                populate = true;
+            }
+            if (arg.equalsIgnoreCase("-c")) {
+                cleanDB = true;
+            }
+
+            if (arg.equalsIgnoreCase("-s")) {
+                slave = true;
+                if (cleanDB || populate) {
+                    System.out.println("SLAVE DOES NOT ALLOW CLEAN OR POPULATION OPTIONS ");
+                }
+            }
+            if (arg.equalsIgnoreCase("-m")) {
+                master = true;
+            }
+
+
+        }
+
+        new Benchmark(master, slave, cleanDB, populate);
     }
 
-
-    public Benchmark() {
-       boolean sucess = loadDescriptor();
-       if(!sucess){
+    public Benchmark(boolean master, boolean slave, boolean cleanDB, boolean populateDatabase) {
+        boolean success = loadDescriptor();
+        if (!success) {
             System.out.println("ERROR LOADING FILE");
             return;
-       }
-       run();
+        }
+        run(master, slave, cleanDB, populateDatabase);
 
     }
-    
-    public void run(){
-        populator.populate();
-        executer.execute(populator.getUseFullData());
+
+    public void run(boolean master, boolean slave, boolean cleanDB, boolean populate) {
+
+
+        if (slave) {
+            executer.execute(true, true);
+        } else {
+            if (cleanDB) {
+                populator.cleanDB();
+            }
+            if (populate) {
+                populator.populate();
+            }
+
+            if (!populate && cleanDB) {
+                System.out.println("THE DATABASE IS PROBABLY EMPTY, ABORTING");
+                return;
+            }
+            if (master) {
+                System.out.println("EXECUTING IN MASTER MODE");
+            } else {
+                System.out.println("EXECUTING IN SINGLE NODE MODE");
+            }
+            executer.execute(master, false);
+        }
+
     }
-    
+
     public boolean loadDescriptor() {
         try {
 
@@ -90,91 +139,93 @@ public class Benchmark {
                 }
             }
 
-
             Map<String, Map<String, String>> map = JsonUtil.getMapMapFromJsonString(jsonString_r);
 
 
             if (!map.containsKey("BenchmarkInfo")) {
                 System.out.println("ERROR: NO INFORMATION ABOUT THE DATA ENGINE FOUND, ABORTING");
                 return false;
-            }
-            else {
+            } else {
 
                 Map<String, String> databaseInfo = map.get("BenchmarkInfo");
                 String databaseClass = databaseInfo.get("DataEngineInterface");
                 System.out.println("CHOSEN DATABASE ENGINE: " + databaseClass);
-                databaseClient = (CRUD) Class.forName(databaseClass).getConstructor().newInstance();
+                databaseCRUDClient = (DataBaseCRUDInterface) Class.forName(databaseClass).getConstructor().newInstance();
 
                 String benchmarkInterfaceClass = databaseInfo.get("BenchmarkEngineInterface");
-                if(benchmarkInterfaceClass.equals(databaseClass)){
+                if (benchmarkInterfaceClass.equals(databaseClass)) {
                     System.out.println("CHOSEN BENCHMARK ENGINE IS EQUAL TO DATABASE ENGINE: SAME OBJECT USED");
-                    benchmarkClient  = (BenchmarkInterfaceFactory) databaseClient;
-                }
-                else{
+                    databaseBenchmarkClient = (DatabaseBenchmarkInterfaceFactory) databaseCRUDClient;
+                } else {
                     System.out.println("CHOSEN BENCHMARK ENGINE: " + benchmarkInterfaceClass);
-                    benchmarkClient = (BenchmarkInterfaceFactory) Class.forName(benchmarkInterfaceClass).getConstructor().newInstance();
+                    databaseBenchmarkClient = (DatabaseBenchmarkInterfaceFactory) Class.forName(benchmarkInterfaceClass).getConstructor().newInstance();
                 }
-
 
 
                 String populatorClass = databaseInfo.get("BenchmarkPopulator");
                 System.out.println("CHOSEN BENCHMARK POPULATOR: " + populatorClass);
-                
+
 
                 String executorClass = databaseInfo.get("BenchmarkExecuter");
-                System.out.println("CHOSEN BENCHMARK EXECUTOR: " +  executorClass);
-                
+                System.out.println("CHOSEN BENCHMARK EXECUTOR: " + executorClass);
+
 
                 if (!map.containsKey("BenchmarkPopulator")) {
                     System.out.println("WARNING: ONE THREAD USED WHEN POPULATING || OTHER NECESSARY PARAMETERS CAN BE MISSING");
-                }
-                else {
+                } else {
                     Map<String, String> info = map.get("BenchmarkPopulator");
-                    benchmarkPopulatorInfo =  new TreeMap<String, String>();
-                   
-                    if(!info.containsKey("thread_number")){
+                    benchmarkPopulatorInfo = new TreeMap<String, String>();
+
+                    if (!info.containsKey("thread_number")) {
                         number_threads_populator = 1;
                         System.out.println("WARNING: ONE THREAD USED WHEN EXECUTING");
                     }
 
-                    for(String s : info.keySet()){
-                        if(s.equalsIgnoreCase("thread_number")){
+                    for (String s : info.keySet()) {
+                        if (s.equalsIgnoreCase("thread_number")) {
                             number_threads_populator = Integer.parseInt(info.get(s).trim());
-                        }
-                        else{
+                        } else {
                             benchmarkPopulatorInfo.put(s, info.get(s));
                         }
                     }
                 }
                 if (!map.containsKey("BenchmarkExecuter")) {
                     System.out.println("WARNING: ONE THREAD USED WHEN EXECUTING || OTHER NECESSARY PARAMETERS CAN BE MISSING");
-                }
-                else {
+                } else {
                     Map<String, String> info = map.get("BenchmarkExecuter");
                     benchmarkExecuterInfo = new TreeMap<String, String>();
-                    
-                    if(!info.containsKey("thread_number")){
+
+                    if (!info.containsKey("thread_number")) {
                         number_threads_executer = 1;
                         System.out.println("WARNING: ONE THREAD USED WHEN EXECUTING");
                     }
 
-                    for(String s : info.keySet()){
-                        if(s.equalsIgnoreCase("thread_number")){
+                    for (String s : info.keySet()) {
+                        if (s.equalsIgnoreCase("thread_number")) {
                             number_threads_executer = Integer.parseInt(info.get(s).trim());
-                        }
-                        else{
+                        } else {
                             benchmarkExecuterInfo.put(s, info.get(s));
                         }
                     }
                 }
 
-                Object[] args = new Object[]{databaseClient,number_threads_populator,benchmarkPopulatorInfo};
-                Class[] args_cl = new Class[]{CRUD.class,int.class,Map.class};
+
+                if (!map.containsKey("BenchmarkSlaves")) {
+                    System.out.println("WARNING: NO SLAVES DEFINED");
+                } else {
+                    Map<String, String> info = map.get("BenchmarkSlaves");
+                    benchmarkExecuterSlaves = info;
+
+                }
+
+
+                Object[] args = new Object[]{databaseCRUDClient, number_threads_populator, benchmarkPopulatorInfo};
+                Class[] args_cl = new Class[]{DataBaseCRUDInterface.class, int.class, Map.class};
                 populator = (BenchmarkPopulator) Class.forName(populatorClass).getConstructor(args_cl).newInstance(args);
 
-
-                args_cl = new Class[]{CRUD.class, BenchmarkInterfaceFactory.class,int.class,Map.class};
-                args = new Object[]{databaseClient,benchmarkClient,number_threads_executer,benchmarkExecuterInfo};
+                // Executer(DataBaseCRUDInterface databaseCrudInterface, DatabaseBenchmarkInterfaceFactory tpcwInterface, int clients, Map<String, String> slaves, Map<String, String> info)
+                args_cl = new Class[]{DataBaseCRUDInterface.class, DatabaseBenchmarkInterfaceFactory.class, int.class, Map.class, Map.class};
+                args = new Object[]{databaseCRUDClient, databaseBenchmarkClient, number_threads_executer, benchmarkExecuterSlaves, benchmarkExecuterInfo};
                 executer = (BenchmarkExecuter) Class.forName(executorClass).getConstructor(args_cl).newInstance(args);
 
                 return true;
