@@ -151,11 +151,6 @@ public class Populator implements BenchmarkPopulator {
 
     public boolean populate() {
 
-
-        DataBaseCRUDInterface.CRUDclient client = databaseClientFactory.getClient();
-        client.truncate("ShoppingCart");
-        client.closeClient();
-
         if (error) {
             return false;
         } else {
@@ -222,6 +217,7 @@ public class Populator implements BenchmarkPopulator {
         client.truncate("Author");
         client.truncate("Countries");
         client.truncate("Addresses");
+        client.closeClient();
     }
 
 
@@ -296,7 +292,6 @@ public class Populator implements BenchmarkPopulator {
         public void run() {
             this.insertAuthors(num_authors);
         }
-
 
         public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
 
