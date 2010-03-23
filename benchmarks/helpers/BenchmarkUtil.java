@@ -8,8 +8,9 @@ package benchmarks.helpers;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.util.GregorianCalendar;
-import java.util.Random;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang.math.JVMRandom;
@@ -24,7 +25,7 @@ public class BenchmarkUtil {
         private static Random rand = new Random();
 
 
- public static GregorianCalendar getRandomDate(int firstYar, int lastYear) {
+   public static GregorianCalendar getRandomDate(int firstYar, int lastYear) {
         int month, day, year, maxday;
 
         year = getRandomInt(firstYar, lastYear);
@@ -51,7 +52,7 @@ public class BenchmarkUtil {
         return num + lower;
     }
 
-    public  static int getRandomNString(int num_digits) {
+   public  static int getRandomNString(int num_digits) {
         int return_num = 0;
         for (int i = 0; i < num_digits; i++) {
             return_num += getRandomInt(0, 9)
@@ -70,18 +71,19 @@ public class BenchmarkUtil {
             'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@', '#',
             '$', '%', '^', '&', '*', '(', ')', '_', '-', '=', '+',
             '{', '}', '[', ']', '|', ':', ';', ',', '.', '?', '/',
-            '~', ' '}; //79 characters
+            '~'}; //78 characters
         int strlen = (int) Math.floor(rand.nextDouble() * ((max - min) + 1));
+        if(strlen<1) strlen = min;
         strlen += min;
         for (i = 0; i < strlen; i++) {
-            char c = chars[(int) Math.floor(rand.nextDouble() * 79)];
+            char c = chars[(int) Math.floor(rand.nextDouble() * 78)];
             newstring = newstring.concat(String.valueOf(c));
         }
         return newstring;
     }
 
 
-       public static byte[] getBytes(Object obj) {
+    public static byte[] getBytes(Object obj) {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(bos);
@@ -110,7 +112,7 @@ public class BenchmarkUtil {
         return null;
     }
 
- public static String getRandomAString(int length) {
+    public static String getRandomAString(int length) {
         String newstring = new String();
         int i;
         final char[] chars = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
@@ -127,6 +129,55 @@ public class BenchmarkUtil {
         }
         return newstring;
     }
-    
+
+
+    public static TreeMap<String,Integer> randomizeMap(Map<String,Integer> map){
+
+           Random r = new Random();
+           TreeMap<String,Integer> new_map =  new TreeMap<String, Integer>();
+           for(String m :  map.keySet()){
+               new_map.put(r.nextInt(10)+":"+m,map.get(m));
+
+           }
+          return new_map;
+    }
+
+
+
+    class MethodExecuter implements Runnable{
+
+        Object invoked;
+        Method m;
+        Object[] parameters;
+
+        MethodExecuter(Object invoked, Method m, Object[] parameters) {
+            this.invoked = invoked;
+            this.m = m;
+            this.parameters = parameters;
+        }
+
+        public void run() {
+            try {
+                m.invoke(invoked, parameters);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            }
+        }
+    }
 
 }
+
+    class StringComparator implements Comparator {
+
+        public int compare(Object o1, Object o2) {
+
+            Random r = new Random();
+            if(!(o1 instanceof String) ||!(o2 instanceof String))
+                return 0;
+
+
+                return r.nextInt(2)-1;
+
+    }}
