@@ -295,7 +295,7 @@ public class ResultHandler {
                 for (String event : events.get(eventType).keySet()) {
                     // System.out.println("\t>>" + event + " : " + events.get(eventType).get(event));
                     try {
-                        out.write((event + " , " + events.get(eventType).get(event) + "").getBytes());
+                        out.write((event + " , " + events.get(eventType).get(event) + "\n").getBytes());
                     } catch (IOException e) {
                         e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
                     }
