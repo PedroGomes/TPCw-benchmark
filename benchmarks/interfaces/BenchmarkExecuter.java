@@ -13,6 +13,6 @@ import java.util.Map;
  */
 public interface BenchmarkExecuter {
 
-    public void execute(Map<String,Object> data);
+    public void execute(boolean master_mode, boolean slave);
 
 }
