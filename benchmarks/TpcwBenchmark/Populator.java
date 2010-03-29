@@ -69,26 +69,29 @@ public class Populator implements BenchmarkPopulator {
     private static /* final */ int NUM_AUTHORS = (int) (.25 * NUM_ITEMS);
     private static /* final */ int NUM_ORDERS = (int) (.9 * NUM_CUSTOMERS);
     private static /* final */ int NUM_COUNTRIES = 92; // this is constant. Never changes!
-    // static Client client;
+
     private static DataBaseCRUDInterface databaseClientFactory;
     ArrayList<String> authors = new ArrayList<String>();
     ArrayList<String> addresses = new ArrayList<String>();
     ArrayList<String> countries = new ArrayList<String>();
     ArrayList<String> costumers = new ArrayList<String>();
     ArrayList<String> items = new ArrayList<String>();
-    // CopyOnWriteArrayList<Orders> orders = new CopyOnWriteArrayList<Orders>();
-    // CopyOnWriteArrayList<OrderLine> orderLines = new CopyOnWriteArrayList<OrderLine>();
+
     boolean debug = true;
     private static int num_threads = 1;
     boolean error = false;
     private CountDownLatch barrier;
+    private long networkDelay = 0;
 
-    //databaseClient,number_threads_populator,benchmarkPopulatorInfo
+    public void init(DataBaseCRUDInterface databaseInterface, int clients, long networkDelay, Map<String, String> info) {
 
-    public Populator(DataBaseCRUDInterface databaseCrudClient, int clients, Map<String, String> info) {
-
-        databaseClientFactory = databaseCrudClient;
         num_threads = clients;
+        num_threads = clients;
+
+        this.networkDelay =  networkDelay;
+
+        databaseClientFactory = databaseInterface;
+        databaseClientFactory.simulatedDelay(networkDelay);
 
         String do_delays = info.get("delay_inserts");
         delay_inserts = Boolean.valueOf(do_delays.trim());
@@ -126,29 +129,6 @@ public class Populator implements BenchmarkPopulator {
         NUM_ORDERS = (int) (.9 * NUM_CUSTOMERS);
     }
 
-    //  /**
-    // * @param args the command line arguments
-    //   */
-//    public static void main(String[] args) {
-//
-//        ResultHandler resultHandler = new ResultHandler("TPCW benchamrk", 400);
-//       // BenchmarkPopulator m = new Populator(resultHandler, 10);
-//        m.populate();
-//
-//    }
-
-    public void databaseInsert(DataBaseCRUDInterface.CRUDclient client, String Operation, String key, String path, Entity value, ResultHandler results) {
-
-        long time1 = System.currentTimeMillis();
-        Map result = client.insert(key, path, value);
-        long time2 = System.currentTimeMillis();
-        results.logResult(Operation, time2 - time1);
-        if (result.get(DataBaseCRUDInterface.TIME_TYPE).equals("SuperColumn"))
-            results.logResult("WRITE_SUPER", (Long) result.get(DataBaseCRUDInterface.TIME));
-        else
-            results.logResult("WRITE", (Long) result.get(DataBaseCRUDInterface.TIME));
-    }
-
     public boolean populate() {
 
         if (error) {
@@ -159,8 +139,7 @@ public class Populator implements BenchmarkPopulator {
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
-
-                insertAddresses(NUM_ADDRESSES);
+                insertAddresses(NUM_ADDRESSES,true);
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
@@ -168,7 +147,7 @@ public class Populator implements BenchmarkPopulator {
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
-                insertAuthors(NUM_AUTHORS);
+                insertAuthors(NUM_AUTHORS,true);
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
@@ -199,11 +178,19 @@ public class Populator implements BenchmarkPopulator {
             removeALL();
     }
 
-    public Map<String, Object> getUseFullData() {
-        TreeMap<String, Object> data = new TreeMap<String, Object>();
-        data.put("ITEMS", items);
-        data.put("COSTUMERS", costumers);
-        return data;
+    public void BenchmarkClean()  {
+            DataBaseCRUDInterface.CRUDclient client = databaseClientFactory.getClient();
+            client.truncate("ShoppingCart");
+            client.truncate("Results");
+            client.truncate("Items");
+        try {
+            insertAuthors(NUM_AUTHORS,false);
+            insertItems(NUM_ITEMS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        client.closeClient();
+
     }
 
     public void removeALL() {
@@ -217,19 +204,32 @@ public class Populator implements BenchmarkPopulator {
         client.truncate("Author");
         client.truncate("Countries");
         client.truncate("Addresses");
+        client.truncate("ShoppingCart");
+        client.truncate("Results");
         client.closeClient();
+    }
+
+    public void databaseInsert(DataBaseCRUDInterface.CRUDclient client, String Operation, String key, String path, Entity value, ResultHandler results) {
+
+        long time1 = System.currentTimeMillis();
+        client.insert(key, path, value);
+        long time2 = System.currentTimeMillis();
+        results.logResult(Operation, time2 - time1);
+
     }
 
 
     /************************************************************************/
     /************************************************************************/
     /************************************************************************/
+
     /**
      * ************
      * Authors*
      * **************
      */
-    public void insertAuthors(int n) throws InterruptedException {
+
+    public void insertAuthors(int n,boolean insert) throws InterruptedException {
         int threads = num_threads;
         int sections = n;
         int firstSection = 0;
@@ -251,10 +251,10 @@ public class Populator implements BenchmarkPopulator {
 
             AuthorPopulator populator = null;
             if (i == 0) {
-                populator = new AuthorPopulator(firstSection);
+                populator = new AuthorPopulator(firstSection,insert);
 
             } else {
-                populator = new AuthorPopulator(sections);
+                populator = new AuthorPopulator(sections,insert);
             }
             partial_authors[i] = populator;
             Thread t = new Thread(populator);
@@ -267,8 +267,10 @@ public class Populator implements BenchmarkPopulator {
             for (String id : ids) {
                 authors.add(id);
             }
+            if(insert)
             results.addResults(populator.returnResults());
             populator.partial_results.cleanResults();
+
         }
         partial_authors = null;
         System.gc();
@@ -281,12 +283,14 @@ public class Populator implements BenchmarkPopulator {
         DataBaseCRUDInterface.CRUDclient client;
         ArrayList<String> partial_authors;
         ResultHandler partial_results;
+        boolean  insertDB;
 
-        public AuthorPopulator(int num_authors) {
+        public AuthorPopulator(int num_authors,boolean insertDB) {
             client = databaseClientFactory.getClient();
             this.num_authors = num_authors;
             partial_authors = new ArrayList<String>();
             partial_results = new ResultHandler("", rounds);
+            this.insertDB = insertDB;
         }
 
         public void run() {
@@ -296,14 +300,9 @@ public class Populator implements BenchmarkPopulator {
         public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
 
             long time1 = System.currentTimeMillis();
-            Map result = client.insert(key, path, value);
+            client.insert(key, path, value);
             long time2 = System.currentTimeMillis();
             results.logResult(Operation, time2 - time1);
-            if (result.get(DataBaseCRUDInterface.TIME_TYPE).equals("SuperColumn"))
-                results.logResult("WRITE_SUPER", (Long) result.get(DataBaseCRUDInterface.TIME));
-            else
-                results.logResult("WRITE", (Long) result.get(DataBaseCRUDInterface.TIME));
-
         }
 
         public void insertAuthors(int n) {
@@ -330,7 +329,8 @@ public class Populator implements BenchmarkPopulator {
 //            insert(bio, key, "Author", "A_BIO", writeConsistency);
 
                 Author a = new Author(key, first_name, last_name, middle_name, dob, bio);
-                databaseInsert("INSERT_Authors", key, "Author", a, partial_results);
+                if(insertDB)
+                    databaseInsert("INSERT_Authors", key, "Author", a, partial_results);
 
                 partial_authors.add(a.getA_id());
             }
@@ -351,7 +351,6 @@ public class Populator implements BenchmarkPopulator {
             return partial_results;
         }
     }
-
 
 
 
@@ -528,13 +527,10 @@ public class Populator implements BenchmarkPopulator {
         public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
 
             long time1 = System.currentTimeMillis();
-            Map result = client.insert(key, path, value);
+            client.insert(key, path, value);
             long time2 = System.currentTimeMillis();
             results.logResult(Operation, time2 - time1);
-            if (result.get(DataBaseCRUDInterface.TIME_TYPE).equals("SuperColumn"))
-                results.logResult("WRITE_SUPER", (Long) result.get(DataBaseCRUDInterface.TIME));
-            else
-                results.logResult("WRITE", (Long) result.get(DataBaseCRUDInterface.TIME));
+
 
         }
 
@@ -672,7 +668,7 @@ public class Populator implements BenchmarkPopulator {
                 I_COST = rand.nextInt(100);
                 // insert(I_AUTHOR, I_TITLE, column_family, "I_AUTHOR", writeCon);
 
-                I_STOCK = (long) rand.nextInt(10);
+                I_STOCK = BenchmarkUtil.getRandomInt(10,30);
                 // insert(I_STOCK, I_TITLE, column_family, "I_STOCK", writeCon);
 
                 int related_number = rand.nextInt(5);
@@ -734,13 +730,10 @@ public class Populator implements BenchmarkPopulator {
         public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
 
             long time1 = System.currentTimeMillis();
-            Map result = client.insert(key, path, value);
+            client.insert(key, path, value);
             long time2 = System.currentTimeMillis();
             results.logResult(Operation, time2 - time1);
-            if (result.get(DataBaseCRUDInterface.TIME_TYPE).equals("SuperColumn"))
-                results.logResult("WRITE_SUPER", (Long) result.get(DataBaseCRUDInterface.TIME));
-            else
-                results.logResult("WRITE", (Long) result.get(DataBaseCRUDInterface.TIME));
+
         }
 
         public ArrayList<String> getData() {
@@ -757,7 +750,7 @@ public class Populator implements BenchmarkPopulator {
      * Addresses*
      * ***********
      */
-    public void insertAddresses(int n) throws InterruptedException {
+    public void insertAddresses(int n,boolean insert) throws InterruptedException {
 
         int threads = num_threads;
         int sections = n;
@@ -780,10 +773,10 @@ public class Populator implements BenchmarkPopulator {
 
             AddressPopulator populator = null;
             if (i == 0) {
-                populator = new AddressPopulator(firstSection);
+                populator = new AddressPopulator(firstSection,insert);
 
             } else {
-                populator = new AddressPopulator(sections);
+                populator = new AddressPopulator(sections,insert);
             }
             Thread t = new Thread(populator);
             partial_addresses[i] = populator;
@@ -797,6 +790,7 @@ public class Populator implements BenchmarkPopulator {
             for (String id : ids) {
                 addresses.add(id);
             }
+            if(insert)
             results.addResults(populator.returnResults());
             populator.partial_results.cleanResults();
             populator = null;
@@ -812,12 +806,14 @@ public class Populator implements BenchmarkPopulator {
         DataBaseCRUDInterface.CRUDclient client;
         ArrayList<String> partial_adresses;
         ResultHandler partial_results;
+        boolean insertDB;
 
-        public AddressPopulator(int num_addresses) {
+        public AddressPopulator(int num_addresses,boolean insertDB) {
             client = databaseClientFactory.getClient();
             this.num_addresses = num_addresses;
             partial_adresses = new ArrayList<String>();
             partial_results = new ResultHandler("", rounds);
+            this.insertDB = insertDB;
         }
 
         public void run() {
@@ -827,13 +823,10 @@ public class Populator implements BenchmarkPopulator {
         public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
 
             long time1 = System.currentTimeMillis();
-            Map result = client.insert(key, path, value);
+             client.insert(key, path, value);
             long time2 = System.currentTimeMillis();
             results.logResult(Operation, time2 - time1);
-            if (result.get(DataBaseCRUDInterface.TIME_TYPE).equals("SuperColumn"))
-                results.logResult("WRITE_SUPER", (Long) result.get(DataBaseCRUDInterface.TIME));
-            else
-                results.logResult("WRITE", (Long) result.get(DataBaseCRUDInterface.TIME));
+
         }
 
         private void insertAddress(int n) {
@@ -866,7 +859,9 @@ public class Populator implements BenchmarkPopulator {
 //            insert(ADDR_ZIP, key, "Addresses", "ADDR_ZIP", writeConsistency);
 //            insert(country.getCo_id(), key, "Addresses", "ADDR_CO_ID", writeConsistency);
 
-                databaseInsert("INSERT_Addresses", key, "Addresses", address, partial_results);
+                if(insertDB){
+                    databaseInsert("INSERT_Addresses", key, "Addresses", address, partial_results);
+                }
                 partial_adresses.add(address.getAddr_id());
 
 
@@ -1040,13 +1035,10 @@ public class Populator implements BenchmarkPopulator {
         public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
 
             long time1 = System.currentTimeMillis();
-            Map result = client.insert(key, path, value);
+            client.insert(key, path, value);
             long time2 = System.currentTimeMillis();
             results.logResult(Operation, time2 - time1);
-            if (result.get(DataBaseCRUDInterface.TIME_TYPE).equals("SuperColumn"))
-                results.logResult("WRITE_SUPER", (Long) result.get(DataBaseCRUDInterface.TIME));
-            else
-                results.logResult("WRITE", (Long) result.get(DataBaseCRUDInterface.TIME));
+           
         }
 
         public void insertOrder_and_CC_XACTS(int begin_key, int number_keys) {
