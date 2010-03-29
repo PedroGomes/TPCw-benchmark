@@ -17,10 +17,12 @@ public  interface BenchmarkPopulator {
      *
      * @return true if sucess, false otherwise
      */
+
+    public void init(DataBaseCRUDInterface databaseInterface, int number_threads, long networkDelay , Map<String,String> info);
+
     public boolean populate();
 
     public void cleanDB();
 
-    public  Map<String,Object> getUseFullData();
-
+    public void BenchmarkClean();
 }
