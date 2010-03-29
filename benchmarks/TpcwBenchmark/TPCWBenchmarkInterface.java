@@ -26,11 +26,13 @@ public interface TPCWBenchmarkInterface extends DatabaseBenchmarkInterfaceFactor
 
        public void searchTop10Books();
 
-       public void addToCart(int Cart, String item_id, int qty );
+       public void addToCart(String Cart, String item_id, int qty );
 
-       public Map<String,Integer> readCart(int Cart);
+       public Map<String,Integer> readCart(String Cart);
 
-       public BuyingResult BuyCartItem(String item_id,int qty); 
+       public BuyingResult BuyCartItem(String item_id,int qty);
+
+       public Map<String,Map<String,Map<String,Object>>> getResults();
     }
 
 
