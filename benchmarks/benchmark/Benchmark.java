@@ -8,10 +8,7 @@ package benchmarks.benchmark;
 import benchmarks.DatabaseEngineInterfaces.CassandraInterface;
 import benchmarks.helpers.JsonUtil;
 
-import benchmarks.interfaces.BenchmarkExecuter;
-import benchmarks.interfaces.DatabaseBenchmarkInterfaceFactory;
-import benchmarks.interfaces.DataBaseCRUDInterface;
-import benchmarks.interfaces.BenchmarkPopulator;
+import benchmarks.interfaces.*;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -32,20 +29,32 @@ public class Benchmark {
     private DataBaseCRUDInterface databaseCRUDClient;
     private DatabaseBenchmarkInterfaceFactory databaseBenchmarkClient;
     private BenchmarkPopulator populator;
-    private BenchmarkExecuter executer;
+    private BenchmarkExecutor executor;
+    private ProbabilityDistribution distribution;
+    private int MasterPort;
+
+
     private int number_threads_populator;
-    private int number_threads_executer;
+    private long network_delay_populator;
+    private int number_threads_executor;
+    private long network_delay_executor;  
     private TreeMap<String, String> benchmarkPopulatorInfo;
-    private TreeMap<String, String> benchmarkExecuterInfo;
-    private Map<String, String> benchmarkExecuterSlaves;
+    private TreeMap<String, String> benchmarkExecutorInfo;
+    Map<String, String> probabilityDistributionInfo;
+    private Map<String, String> benchmarkExecutorSlaves;
 
     public static void main(String[] args) {
 
-        boolean populate = false;
-        boolean cleanDB = false;
+        boolean populate = false;//Populate
+        boolean cleanDB = false; //Full clean
+        boolean cleanFB = false; //Clean for benchmark execution
         boolean slave = false;
         boolean master = false;
         for (String arg : args) {
+
+            if(arg.equalsIgnoreCase("-cb")){
+                cleanFB =  true;
+            }
 
             if (arg.equalsIgnoreCase("-p")) {
                 populate = true;
@@ -67,24 +76,26 @@ public class Benchmark {
 
         }
 
-        new Benchmark(master, slave, cleanDB, populate);
+        new Benchmark(master, slave, cleanDB, cleanFB , populate);
     }
 
-    public Benchmark(boolean master, boolean slave, boolean cleanDB, boolean populateDatabase) {
+    public Benchmark(boolean master, boolean slave, boolean cleanDB , boolean cleanFB , boolean populateDatabase) {
         boolean success = loadDescriptor();
         if (!success) {
             System.out.println("ERROR LOADING FILE");
             return;
         }
-        run(master, slave, cleanDB, populateDatabase);
+        run(master, slave, cleanDB, cleanFB,populateDatabase);
 
     }
 
-    public void run(boolean master, boolean slave, boolean cleanDB, boolean populate) {
+    public void run(boolean master, boolean slave, boolean cleanDB,boolean cleanFB, boolean populate) {
 
 
         if (slave) {
-            executer.execute(true, true);
+             BenchmarkSlave slaveHandler = new BenchmarkSlave(MasterPort,executor);
+             slaveHandler.run();
+
         } else {
             if (cleanDB) {
                 populator.cleanDB();
@@ -92,17 +103,32 @@ public class Benchmark {
             if (populate) {
                 populator.populate();
             }
+            if(cleanFB){
+                if(cleanDB&&populate){
+                    System.out.println("[INFO:] BENCHMARK CLEANING IS UNNECESSARY, IGNORED");
+                }
+                else{
+                    populator.BenchmarkClean();
+                }
+            }
 
             if (!populate && cleanDB) {
                 System.out.println("THE DATABASE IS PROBABLY EMPTY, ABORTING");
                 return;
             }
-            if (master) {
-                System.out.println("EXECUTING IN MASTER MODE");
-            } else {
-                System.out.println("EXECUTING IN SINGLE NODE MODE");
+
+            if (master) {//master, signal slaves
+                System.out.println("[INFO:] EXECUTING IN MASTER MODE");
+                BenchmarkMaster masterHandler = new BenchmarkMaster(executor,benchmarkExecutorSlaves);
+                masterHandler.run();
+
+            } else { //single node run
+               System.out.println("[INFO:] EXECUTING IN SINGLE NODE MODE");
+               executor.prepare();
+               executor.execute("0");
+               executor.consolidate(); 
             }
-            executer.execute(master, false);
+
         }
 
     }
@@ -166,68 +192,110 @@ public class Benchmark {
                 System.out.println("CHOSEN BENCHMARK POPULATOR: " + populatorClass);
 
 
-                String executorClass = databaseInfo.get("BenchmarkExecuter");
+                String executorClass = databaseInfo.get("BenchmarkExecutor");
                 System.out.println("CHOSEN BENCHMARK EXECUTOR: " + executorClass);
 
 
                 if (!map.containsKey("BenchmarkPopulator")) {
-                    System.out.println("WARNING: ONE THREAD USED WHEN POPULATING || OTHER NECESSARY PARAMETERS CAN BE MISSING");
+                    System.out.println("[WARNING:] ONE THREAD USED WHEN POPULATING || OTHER NECESSARY PARAMETERS CAN BE MISSING");
                 } else {
                     Map<String, String> info = map.get("BenchmarkPopulator");
                     benchmarkPopulatorInfo = new TreeMap<String, String>();
 
                     if (!info.containsKey("thread_number")) {
                         number_threads_populator = 1;
-                        System.out.println("WARNING: ONE THREAD USED WHEN EXECUTING");
+                        System.out.println("[WARNING:] ONE THREAD USED WHEN EXECUTING");
+                    }
+                    if (!info.containsKey("network_delay")) {
+                        network_delay_populator= 0;
+                        System.out.println("[WARNING:] NO ADDED DELAY WILL BE USED");
                     }
 
                     for (String s : info.keySet()) {
                         if (s.equalsIgnoreCase("thread_number")) {
                             number_threads_populator = Integer.parseInt(info.get(s).trim());
-                        } else {
+                        }
+                        else if (s.equalsIgnoreCase("network_delay")) {
+                            network_delay_populator = Long.parseLong(info.get(s).trim());
+                        }
+                        else {
                             benchmarkPopulatorInfo.put(s, info.get(s));
                         }
                     }
                 }
-                if (!map.containsKey("BenchmarkExecuter")) {
-                    System.out.println("WARNING: ONE THREAD USED WHEN EXECUTING || OTHER NECESSARY PARAMETERS CAN BE MISSING");
+
+                if (!map.containsKey("BenchmarkExecutor")) {
+                    System.out.println("[WARNING:] ONE THREAD USED WHEN EXECUTING || OTHER NECESSARY PARAMETERS CAN BE MISSING");
                 } else {
-                    Map<String, String> info = map.get("BenchmarkExecuter");
-                    benchmarkExecuterInfo = new TreeMap<String, String>();
+                    Map<String, String> info = map.get("BenchmarkExecutor");
+                    benchmarkExecutorInfo = new TreeMap<String, String>();
 
                     if (!info.containsKey("thread_number")) {
-                        number_threads_executer = 1;
-                        System.out.println("WARNING: ONE THREAD USED WHEN EXECUTING");
+                        number_threads_executor = 1;
+                        System.out.println("[WARNING:] ONE THREAD USED WHEN EXECUTING");
                     }
+                    if (!info.containsKey("network_delay")) {
+                        network_delay_executor= 0;
+                        System.out.println("[WARNING:] NO ADDED DELAY WILL BE USED");
+                    }
+                    if (!info.containsKey("master_port")) {
+                        MasterPort = 55155;
+                        System.out.println("[WARNING:] USING DEFAULT MASTER PORT: 55155");
+                    }
+
 
                     for (String s : info.keySet()) {
                         if (s.equalsIgnoreCase("thread_number")) {
-                            number_threads_executer = Integer.parseInt(info.get(s).trim());
-                        } else {
-                            benchmarkExecuterInfo.put(s, info.get(s));
+                            number_threads_executor = Integer.parseInt(info.get(s).trim());
+                        }
+                        else if (s.equalsIgnoreCase("network_delay")) {
+                            network_delay_executor = Long.parseLong(info.get(s).trim());
+                        }
+                        else if (s.equalsIgnoreCase("master_port")) {
+                            MasterPort = Integer.parseInt(info.get(s).trim());
+                        }
+                        else {
+                            benchmarkExecutorInfo.put(s, info.get(s));
                         }
                     }
                 }
 
 
-                if (!map.containsKey("BenchmarkSlaves")) {
-                    System.out.println("WARNING: NO SLAVES DEFINED");
-                } else {
-                    Map<String, String> info = map.get("BenchmarkSlaves");
-                    benchmarkExecuterSlaves = info;
+                String distributionClass = "benchmarks.interfaces.ProbabilityDistribution.ZipfDistribution";
 
+                if (!map.containsKey("ProbabilityDistributions")) {
+                    System.out.println("[WARNING:] NO DISTRIBUTION INFO FOUND USING NORMAL DISTRIBUTION");
+                } else {
+                    Map<String, String> info = map.get("ProbabilityDistributions");
+                    probabilityDistributionInfo = new TreeMap<String, String>();
+                    if (!info.containsKey("Distribution")) {
+                        distributionClass = "benchmarks.interfaces.ProbabilityDistribution.ZipfDistribution";
+                        System.out.println("[WARNING:] NO DISTRIBUTION INFO FOUND USING NORMAL DISTRIBUTION");
+                        probabilityDistributionInfo.put("skew","1");
+                    }
+                    else{
+                        distributionClass = info.get("Distribution");
+                        for (String s : info.keySet()) {
+                            probabilityDistributionInfo.put(s, info.get(s));
+                        }
+                    }
                 }
 
+                if (!map.containsKey("BenchmarkSlaves")) {
+                    System.out.println("[WARNING:] NO SLAVES DEFINED");
+                } else {
+                    Map<String, String> info = map.get("BenchmarkSlaves");
+                    benchmarkExecutorSlaves = info;
+                }
 
-                Object[] args = new Object[]{databaseCRUDClient, number_threads_populator, benchmarkPopulatorInfo};
-                Class[] args_cl = new Class[]{DataBaseCRUDInterface.class, int.class, Map.class};
-                populator = (BenchmarkPopulator) Class.forName(populatorClass).getConstructor(args_cl).newInstance(args);
+                distribution =  (ProbabilityDistribution) Class.forName(distributionClass).getConstructor().newInstance();
+                distribution.setInfo(probabilityDistributionInfo);
 
-                // Executer(DataBaseCRUDInterface databaseCrudInterface, DatabaseBenchmarkInterfaceFactory tpcwInterface, int clients, Map<String, String> slaves, Map<String, String> info)
-                args_cl = new Class[]{DataBaseCRUDInterface.class, DatabaseBenchmarkInterfaceFactory.class, int.class, Map.class, Map.class};
-                args = new Object[]{databaseCRUDClient, databaseBenchmarkClient, number_threads_executer, benchmarkExecuterSlaves, benchmarkExecuterInfo};
-                executer = (BenchmarkExecuter) Class.forName(executorClass).getConstructor(args_cl).newInstance(args);
+                populator = (BenchmarkPopulator) Class.forName(populatorClass).getConstructor().newInstance();
+                populator.init(databaseCRUDClient,number_threads_populator,network_delay_populator,benchmarkPopulatorInfo);
 
+                executor = (BenchmarkExecutor) Class.forName(executorClass).getConstructor().newInstance();
+                executor.init(databaseCRUDClient, databaseBenchmarkClient, number_threads_executor,network_delay_executor, distribution, benchmarkExecutorInfo);
                 return true;
             }
         } catch (NoSuchMethodException ex) {
