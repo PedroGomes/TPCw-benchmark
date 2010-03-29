@@ -626,6 +626,7 @@ public class CassandraInterface implements DataBaseCRUDInterface, benchmarks.Tpc
 
             SlicePredicate predicate = new SlicePredicate();
             SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 300);
+            predicate.setSlice_range(range);
             try {
                 List<ColumnOrSuperColumn> result = getCassandraClient().get_slice(Keyspace, key, parent, predicate, consistencyLevel);
                 delay();
