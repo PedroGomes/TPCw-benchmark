@@ -19,9 +19,11 @@ public interface DataBaseCRUDInterface {
 
     public CRUDclient getClient();
 
+    public void simulatedDelay(long delay); 
+
     interface CRUDclient {
 
-        public Map<String,Object> insert(String key, String path, Entity value);
+        public Object insert(String key, String path, Entity value);
 
         public void remove(String key, String path, String column);
 
@@ -29,11 +31,12 @@ public interface DataBaseCRUDInterface {
 
         public Object read(String key, String path, String column);
 
-        public List<Object> rangeQuery(String table,String field ,int limit);
+        public Map<String,Map<String,Object>> rangeQuery(String table,List<String> fields ,int limit);
 
         public void truncate(String path);
 
         public void closeClient();
+
     }
 
 }
