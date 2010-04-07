@@ -1,8 +1,11 @@
 YET ANOTHER TPCW (and others) BENCHMARK
 =========================
 
-Propose:
-	YCBS isn't out yet, and it misses some thing I think. This is a adaptable benchmark tool, that already includes master slave coordination, probability distributions, and a Cassandra interface(some problems to be resolved). 
+-Propose:
+YCBS isn't out yet, and it misses some things I think. This is an adaptable benchmark tool that already includes master slave coordination, probability distributions, and a Cassandra interface (some problems to be resolved).
+
+-About: 
+I'm no database expert, and I have full knowledge that benchmarking isn't simple. But it's in the moment, a pretty naive approach to evaluate the risks of using an eventual consistency database in a e-commerce environment 
 
 Use:
 	-cb - Benchmark cleaning, removes the basic tables needed for execution, and can introduce fresh values. 
