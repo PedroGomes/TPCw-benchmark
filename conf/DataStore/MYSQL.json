@@ -1,0 +1,29 @@
+{
+"DataBaseInfo":{
+	"database":"TPCW",
+	"user":"root",
+	"password":"naosei"
+	},
+"MasterConnections":{
+	"localhost":"3306"
+	},
+"SlaveConnections":{
+	"localhost":"3306"
+	},
+"ReadWritePaths":{
+	"Writes":"Master",
+	"Reads":"Slaves"
+	},	
+"OtherConnections":{
+	"192.168.82.20":"3306",
+	"localhost":"3306",
+    "192.168.82.162":"3306",
+    "192.168.82.163":"3306",
+    "192.168.82.164":"3306",
+    "192.168.82.165":"3306",
+    "192.168.82.166":"3306"
+	},
+"Instructions":{
+	"writes reads":" Can assume ALL,MASTER or SLAVE values. Only sets machine tipes, not numbers"	
+	}
+}
