@@ -150,6 +150,12 @@ public class ResultHandler {
         this.bechmark_info = bechmark_info;
     }
 
+    public Map<String, String> getBechmark_info() {
+        return bechmark_info;
+    }
+
+
+
     /**
      * UTILITIES***
      */
@@ -312,7 +318,7 @@ public class ResultHandler {
         }
 
         GregorianCalendar date = new GregorianCalendar();
-        String suffix = date.get(GregorianCalendar.YEAR) + "_" + date.get(GregorianCalendar.MONTH) + "_" + date.get(GregorianCalendar.DAY_OF_MONTH) + "_" + date.get(GregorianCalendar.HOUR_OF_DAY) + "_" + date.get(GregorianCalendar.MINUTE) + "";
+        String suffix = date.get(GregorianCalendar.YEAR) + "_" + (date.get(GregorianCalendar.MONTH)+1) + "_" + date.get(GregorianCalendar.DAY_OF_MONTH) + "_" + date.get(GregorianCalendar.HOUR_OF_DAY) + "_" + date.get(GregorianCalendar.MINUTE) + "";
 
         File folder = new File(enclosing_folder.getAbsolutePath() + "/" + test_name + suffix);
 

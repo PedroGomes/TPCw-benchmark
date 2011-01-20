@@ -212,6 +212,7 @@ public class TPCWWorkloadFactory extends AbstractWorkloadGeneratorFactory {
 
         globalResultHandler = new ResultHandler(workloadName, -1);
         Map<String,String> info =  new LinkedHashMap<String, String>();
+
         info.put("Workload class:",TPCWWorkloadFactory.class.getName());
         info.put("Workload conf:",workloadName);
         info.put("Workload values:",workload_values.toString());
@@ -222,6 +223,12 @@ public class TPCWWorkloadFactory extends AbstractWorkloadGeneratorFactory {
         info.put("Operation num",executor.num_operations+"");
         info.put("Distribution",distribution.getName());
         info.put("Distribution conf",distribution.getInfo().toString());
+        info.put("----","----");
+
+        GregorianCalendar date = new GregorianCalendar();
+        String data_string = date.get(GregorianCalendar.YEAR) + "\\" + (date.get(GregorianCalendar.MONTH)+1) + "\\" + date.get(GregorianCalendar.DAY_OF_MONTH) + " -- " + date.get(GregorianCalendar.HOUR_OF_DAY) + ":" + date.get(GregorianCalendar.MINUTE) + "";
+        info.put("Start",data_string);
+
         globalResultHandler.setBechmark_info(info);
     }
 
@@ -268,6 +275,13 @@ public class TPCWWorkloadFactory extends AbstractWorkloadGeneratorFactory {
         if (!nodeID.isMaster()) {
             BenchmarkSlave.terminated = true;
         }
+
+
+        GregorianCalendar date = new GregorianCalendar();
+        String data_string = date.get(GregorianCalendar.YEAR) + "\\" + (date.get(GregorianCalendar.MONTH)+1) + "\\" + date.get(GregorianCalendar.DAY_OF_MONTH) + " -- " + date.get(GregorianCalendar.HOUR_OF_DAY) + ":" + date.get(GregorianCalendar.MINUTE) + "";
+        globalResultHandler.getBechmark_info().put("End",data_string);
+
+
         globalResultHandler.listDataToSOutput();
         globalResultHandler.listDatatoFiles(result_path, "", true);
     }

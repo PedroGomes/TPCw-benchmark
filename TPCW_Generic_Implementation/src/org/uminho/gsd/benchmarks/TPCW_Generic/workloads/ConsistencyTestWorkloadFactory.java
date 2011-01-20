@@ -32,10 +32,7 @@ import org.uminho.gsd.benchmarks.interfaces.Workload.WorkloadGeneratorInterface;
 import org.uminho.gsd.benchmarks.interfaces.executor.DatabaseExecutorInterface;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Workload that generates operations to generate possible inconsistency in the database due to the lack of ACID transactions.
@@ -242,6 +239,27 @@ public class ConsistencyTestWorkloadFactory extends AbstractWorkloadGeneratorFac
         distribution.init(items_info.size(), null);
         progressBar = new ProgressBar(executor.num_clients, executor.num_operations);
         globalResultHandler = new ResultHandler(workloadName, -1);
+
+         Map<String,String> info =  new LinkedHashMap<String, String>();
+
+        info.put("Workload class:",TPCWWorkloadFactory.class.getName());
+        info.put("Workload conf:",workloadName);
+        info.put("Workload values:","NA");
+        info.put("Database Executor",databaseFactory.getClass().getName());
+        info.put("Database engine conf:",databaseClient.getInfo().toString());
+        info.put("----","----");
+        info.put("Client num",executor.num_clients+"");
+        info.put("Operation num",executor.num_operations+"");
+        info.put("Distribution",distribution.getName());
+        info.put("Distribution conf",distribution.getInfo().toString());
+        info.put("----","----");
+
+        GregorianCalendar date = new GregorianCalendar();
+        String data_string = date.get(GregorianCalendar.YEAR) + "\\" + (date.get(GregorianCalendar.MONTH)+1) + "\\" + date.get(GregorianCalendar.DAY_OF_MONTH) + " -- " + date.get(GregorianCalendar.HOUR_OF_DAY) + ":" + date.get(GregorianCalendar.MINUTE) + "";
+        info.put("Start",data_string);
+
+        globalResultHandler.setBechmark_info(info);
+
     }
 
     @Override
@@ -425,6 +443,11 @@ public class ConsistencyTestWorkloadFactory extends AbstractWorkloadGeneratorFac
         } else {
             BenchmarkSlave.terminated = true;
         }
+
+
+        GregorianCalendar date = new GregorianCalendar();
+        String data_string = date.get(GregorianCalendar.YEAR) + "\\" + (date.get(GregorianCalendar.MONTH)+1) + "\\" + date.get(GregorianCalendar.DAY_OF_MONTH) + " -- " + date.get(GregorianCalendar.HOUR_OF_DAY) + ":" + date.get(GregorianCalendar.MINUTE) + "";
+        globalResultHandler.getBechmark_info().put("End",data_string);
 
         globalResultHandler.listDataToSOutput();
 
