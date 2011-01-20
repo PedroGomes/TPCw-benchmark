@@ -1,0 +1,71 @@
+# Purpose:
+A benchmarking platform to compare the different database approaches. Based on the <a href="http://www.tpc.org/tpcw/">TPC-W</a> specification it allows to compare the latency between diferent implementations. 
+
+# About: 
+Implementing all the database operations on the TPCw (11 of the 14 original) this platform includes a <a href="http://cassandra.apache.org/">Cassandra</a>, <a href="http://www.mysql.com/">MySQL</a> and <a href="https://github.com/PedroGomes/datanucleus-cassandra">Datanucleus Cassandra</a> functional ports of that specification. 
+
+A basic consistency workload is also available that allows the user to mesure the efects of no ACID garanties.   
+
+# Build: 
+
+Execute:
+<code>
+- ant all 
+</code>
+	
+Used libraries: 
+(not that the manifest.mf is generated during the building process so the use of different versions my be allowed) : 
+
+Benchmark platform: 
+- colt.jar (Colt Project)
+- jackson-core-asl-1.0.1 and jackson-mapper-asl-1.0.1 (Jackson Java JSON-processor)
+- log4j-1.2.13.jar 
+
+Mysql:
+- mysql-connector-java-5.1.12-bin.jar
+
+Cassandra (0.6.X): 
+- libthrift-r917130.jar
+- apache-cassandra-0.6.1.jar
+- slf4j-api-1.5.8.jar
+- slf4j-log4j12-1.5.8.jar
+
+Datanucleus Cassandra: 
+- asm-3.1.jar (Datanucleus)
+- datanucleus-core-2.1.0-m2.jar (Datanucleus)
+- datanucleus-enhancer-2.0.2.jar (Datanucleus)
+- jdo2-api.jar (see <a href="https://github.com/PedroGomes/datanucleus-cassandra">Datanucleus Cassandra</a> )
+- datanucleus-cassandra-0.1.jar (see <a href="https://github.com/PedroGomes/datanucleus-cassandra">Datanucleus Cassandra</a> )
+
+
+# Configuration: 
+
+This database allows the use of different populating classes, database executing interfaces and workload factories. To configure the benchmark the user must edit the base Benchmark JSON file and the associated workload and database files accordingly with the context.  
+
+
+# Use:
+	-cb - Benchmark cleaning, removes the basic tables needed for execution, and can introduce fresh values. (Only functional in MySQL)
+	
+	-c - Full Database cleaning.
+
+	-p - Populates the database.
+	
+	-m - Execute in master mode.
+	
+	-s - Execute in slave mode. 
+
+# Warnings and needed improvements:- The population process started in a generic form and for that reason the Cassandra populator reads what fields it should use to create super columns; maybe this doesn't make sense anymore.- During the execution process, it's a painful process to alter the configuration file every time. More options should be available through the command line (maybe a profile mechanism).
+- Bad use of log4j.- One of the main problems in the MySQL benchmark is the client side generation of ids. Avoiding the overhead of transactions (and synchronization mechanism have to be implemented outside the system as it can exist 2 or more benchmark nodes executing at the same time), some of the queries may need changes. - On the same topic a base MySQL implementation is used where so no indexes are created. This makes the Admin confirm operation unusable because of the execution time. Change the query occurrence in the workload to 0 or check the population file to see how to create indexes.
+- On consistency workload the stock of items is usually a high number to ease the analyze of the data, on normal TPCW workloads the stock is updated when the coded minimum is reached as supposed, but in Cassandra no guaranties are made about the outcome of that process.   
+
+# Feedback
+
+Updated source and an issue tracker are available at:
+	
+    https://github.com/PedroGomes/TPCw-benchmark
+
+Your feedback is welcome.
+
+
+
+
