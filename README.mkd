@@ -44,27 +44,26 @@ This database allows the use of different populating classes, database executing
 
 
 # Use:
-
-------------------------------------------------------        
                                             
- -w  <Workload alias>      : a defined workload alias                                                     
- -d  <Database alias>      : a defined database alias                                                     
- -t  <Num Threads>         : number of executing threads                                                  
- -o  <Num Operations>      : number of operations to be executed per thread                              
- -df <distribution factor> : a distribution factor that influences the power law skew on product selection
- -tt <time milliseconds>   : override the default TPC-W think time to the defined value         
+    -w  <Workload alias>      : a defined workload alias                                                     
+    -d  <Database alias>      : a defined database alias                                                     
+    -t  <Num Threads>         : number of executing threads                                                  
+    -o  <Num Operations>      : number of operations to be executed per thread                              
+    -df <distribution factor> : a distribution factor that influences the power law skew on product selection
+    -tt <time milliseconds>   : override the default TPC-W think time to the defined value         
           
-------------------------------------------------------      
+   ------------------------------------------------------      
                                            
- -c   : clean the database                                                                                
- -cb  : special clean (outdated)                                                                   
- -p   : populate                                                                                         
- -pop : populate and return (can be used with -c)   
+    -c   : clean the database                                                                                
+    -cb  : special clean (outdated)                                                                   
+    -p   : populate                                                                                         
+    -pop : populate and return (can be used with -c)   
                                                     
-------------------------------------------------------    
+   ------------------------------------------------------    
                                                  
- -m   : run as master                                                                                
- -s <port>   : run as slave in the defined port                                                            
+    -m        : run as master                                                                                
+    -s <port> : run as slave in the defined port
+                                                            
 
 # Warnings and needed improvements:
 - Based on TPCW v1.8
