@@ -700,7 +700,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
     }
 
     /**
-     * ************                                                                 ©
+     * ************
      * Items*
      * **************
      */
