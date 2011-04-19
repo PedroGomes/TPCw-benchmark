@@ -1,9 +1,9 @@
 {
    "BenchmarkInterfaces" :
       {
-         "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.TPCW_Generic.workloads.TPCWWorkloadFactory",
+         "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.generic.workloads.TPCWWorkloadFactory",
          "DataEngineInterface" : "org.uminho.gsd.benchmarks.TPCW_MySQL.executor.TPCW_MySQL_Factory",
-         "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.TPCW_Generic.populator.Populator"
+         "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.generic.populator.Populator"
       },
    "BenchmarkInfo" :
       {
@@ -15,7 +15,6 @@
       },
    "BenchmarkSlaves" :
       {
-        "192.168.82.24":"11711"
       },
    "Database_alias" :
       {
@@ -28,7 +27,7 @@
          "mysql" :
             {
                "DataEngineInterface" : "org.uminho.gsd.benchmarks.TPCW_MySQL.executor.TPCW_MySQL_Factory",
-               "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.TPCW_Generic.populator.Populator",
+               "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.generic.populator.Populator",
                "databaseExecutorConfiguration" : "MYSQL.json"
             },
          "orm" :
@@ -42,17 +41,17 @@
       {
          "consistency" :
             {
-               "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.TPCW_Generic.workloads.ConsistencyTestWorkloadFactory",
+               "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.generic.workloads.ConsistencyTestWorkloadFactory ",
                "workloadConfiguration" : "TPCWConsistency.json"
             },
          "ordering" :
             {
-               "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.TPCW_Generic.workloads.TPCWWorkloadFactory",
+               "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.generic.workloads.TPCWWorkloadFactory",
                "workloadConfiguration" : "TPCWOrderingMix.json"
             },
          "browsing" :
             {
-               "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.TPCW_Generic.workloads.TPCWWorkloadFactory",
+               "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.generic.workloads.TPCWWorkloadFactory",
                "workloadConfiguration" : "TPCWBrowsingMix.json"
             }
       }
