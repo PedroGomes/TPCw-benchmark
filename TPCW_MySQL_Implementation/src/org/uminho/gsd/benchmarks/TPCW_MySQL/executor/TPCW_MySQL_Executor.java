@@ -21,15 +21,16 @@ package org.uminho.gsd.benchmarks.TPCW_MySQL.executor;
 
 
 import org.apache.log4j.Logger;
-import org.uminho.gsd.benchmarks.TPCW_Generic.BuyingResult;
-import org.uminho.gsd.benchmarks.TPCW_Generic.entities.Address;
-import org.uminho.gsd.benchmarks.TPCW_Generic.entities.Customer;
-import org.uminho.gsd.benchmarks.TPCW_Generic.populator.Constants;
+import org.uminho.gsd.benchmarks.generic.BuyingResult;
+import org.uminho.gsd.benchmarks.generic.entities.Address;
+import org.uminho.gsd.benchmarks.generic.entities.Customer;
+import org.uminho.gsd.benchmarks.generic.populator.Constants;
 
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkNodeID;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.BenchmarkUtil;
 import org.uminho.gsd.benchmarks.helpers.SqlReader;
+import org.uminho.gsd.benchmarks.helpers.ThinkTime;
 import org.uminho.gsd.benchmarks.interfaces.Entity;
 import org.uminho.gsd.benchmarks.interfaces.KeyGenerator;
 import org.uminho.gsd.benchmarks.interfaces.Workload.Operation;
@@ -86,7 +87,7 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
      * The number of bought acts*
      */
     int bought_actions;
-    /**                                                              se
+    /**
      * The number of bougth carts*
      */
     int bought_carts;
@@ -104,7 +105,7 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
     /**
      * Think time*
      */
-    private int simulatedDelay;
+    private long simulatedDelay;
 
 
     /**
@@ -258,11 +259,11 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
                 client_result_handler.logResult(op.getOperation(), (end_time - init_time));
 
 
-                simulatedDelay = (int) ((-Math.log(random.nextDouble()) * 7) * 1000d); /*); */
-                if (simulatedDelay > 70000) {
-                    simulatedDelay = 70000;
+                simulatedDelay = ThinkTime.getThinkTime();
+
+                if(simulatedDelay>0){
+                    Thread.sleep(simulatedDelay);
                 }
-                Thread.sleep(simulatedDelay);
 
             } catch (NoSuchFieldException e) {
                 System.out.println("[ERROR:] THIS OPERATION DOES NOT EXIST: " + e.getMessage());

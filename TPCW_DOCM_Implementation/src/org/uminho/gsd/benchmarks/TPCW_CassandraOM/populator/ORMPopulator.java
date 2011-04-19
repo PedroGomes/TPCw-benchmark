@@ -24,11 +24,14 @@
 package org.uminho.gsd.benchmarks.TPCW_CassandraOM.populator;
 
 
+//import com.spidertracks.datanucleus.client.Consistency;
+//import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.uminho.gsd.benchmarks.TPCW_CassandraOM.entities.*;
-import org.uminho.gsd.benchmarks.TPCW_Generic.helpers.NodeKeyGenerator;
-import org.uminho.gsd.benchmarks.TPCW_Generic.populator.Constants;
+import org.uminho.gsd.benchmarks.generic.helpers.NodeKeyGenerator;
+import org.uminho.gsd.benchmarks.generic.populator.Constants;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.BenchmarkUtil;
+import org.uminho.gsd.benchmarks.helpers.TestClass;
 import org.uminho.gsd.benchmarks.interfaces.Entity;
 import org.uminho.gsd.benchmarks.interfaces.executor.AbstractDatabaseExecutorFactory;
 import org.uminho.gsd.benchmarks.interfaces.executor.DatabaseExecutorInterface;
@@ -42,6 +45,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 
 public class ORMPopulator extends AbstractBenchmarkPopulator {
 
@@ -71,6 +75,10 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
     ArrayList<Address> addresses = new ArrayList<Address>();
     ArrayList<Country> countries = new ArrayList<Country>();
     ArrayList<Customer> costumers = new ArrayList<Customer>();
+
+    TreeMap<String,Integer> address_use = new TreeMap<String, Integer>();
+
+
     ArrayList<Item> items = new ArrayList<Item>();
 
     boolean debug = true;
@@ -78,10 +86,13 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
     boolean error = false;
     private CountDownLatch barrier;
 
+    private static boolean client_error = false;
+
     public ORMPopulator(AbstractDatabaseExecutorFactory database_interface_factory, String conf_filename) {
         super(database_interface_factory, conf_filename);
 
         pmf = JDOHelper.getPersistenceManagerFactory("datanucleus.properties");
+        //pmf = JDOHelper.getPersistenceManagerFactory("Test");
 
         databaseClientFactory = database_interface_factory;
 
@@ -169,26 +180,62 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
         } else {
             try {
                 insertCountries(NUM_COUNTRIES);
+                if (client_error) {
+                    System.out.println("Error when populating countries");
+                    return false;
+                }
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
+
                 insertAddresses(NUM_ADDRESSES, true);
+                if (client_error) {
+                    System.out.println("Error when populating addresses");
+                    return false;
+                }
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
+
+
                 insertCostumers(NUM_CUSTOMERS);
+                if (client_error) {
+                    System.out.println("Error when populating costumers");
+                    return false;
+                }
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
+
+                for(String address : address_use.keySet()){
+                    if(address_use.get(address)>1){
+                        System.out.println("USED SERVERAL TIMES: "+address);
+                    }
+                }
+
                 insertAuthors(NUM_AUTHORS, true);
+                if (client_error) {
+                    System.out.println("Error when populating authors");
+                    return false;
+                }
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
+
                 insertItems(NUM_ITEMS);
+                if (client_error) {
+                    System.out.println("Error when populating items");
+                    return false;
+                }
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
                 insertOrder_and_CC_XACTS(NUM_ORDERS);
+
+                if (client_error) {
+                    System.out.println("Error when populating orders");
+                    return false;
+                }
 
                 System.out.println("***Finished***");
 
@@ -207,18 +254,17 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
         }
     }
 
-    public void cleanDB() {
+    public void cleanDB() throws Exception {
         removeALL();
     }
 
-    public void BenchmarkClean() {
+    public void BenchmarkClean() throws Exception {
         DatabaseExecutorInterface client = databaseClientFactory.getDatabaseClient();
         client.truncate("ShoppingCart");
         client.truncate("ShoppingCartLine");
         client.truncate("Order");
         client.truncate("OrderLine");
         client.truncate("CCXact");
-        
 
 
 //        client.truncate("Results");
@@ -233,7 +279,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
     }
 
-    public void removeALL() {
+    public void removeALL() throws Exception {
 
         DatabaseExecutorInterface client = databaseClientFactory.getDatabaseClient();
 
@@ -255,7 +301,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
         client.closeClient();
     }
 
-    public void databaseInsert(DatabaseExecutorInterface client, String Operation, String key, String path, Entity value, ResultHandler results) {
+    public void databaseInsert(DatabaseExecutorInterface client, String Operation, String key, String path, Entity value, ResultHandler results) throws Exception {
 
 
         PersistenceManager pm = pmf.getPersistenceManager();
@@ -267,13 +313,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
             pm.makePersistent(value);
             tx.commit();
 
-
-        }
-
-        catch (Exception ec) {
-            ec.printStackTrace();
-        }
-        finally {
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -368,7 +408,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
             this.insertAuthors(num_authors);
         }
 
-        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
+        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) throws Exception {
 
             long time1 = System.currentTimeMillis();
             client.insert(key, path, value);
@@ -400,7 +440,14 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
                 Author a = new Author(base + i, first_name, last_name, middle_name, dob, bio);
                 if (insertDB)
-                    databaseInsert("INSERT_Authors", (base + i) + "", "Author", a, partial_results);
+                    try {
+                        databaseInsert("INSERT_Authors", (base + i) + "", "Author", a, partial_results);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        client_error = true;
+
+                        break;
+                    }
 
                 partial_authors.add(a);
             }
@@ -529,8 +576,6 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
                 double discount = r.nextDouble();
                 //  insert(discount, key, "Customer", "C_DISCOUNT", writeCon);
 
-                String adress = "Street: " + (BenchmarkUtil.getRandomAString(8, 15) + " " + BenchmarkUtil.getRandomAString(8, 15)) + " number: " + r.nextInt(500);
-                //  insert(adress, key, "Customer", "C_PHONE", writeCon);
 
 
                 double C_BALANCE = 0.00;
@@ -570,11 +615,18 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
                 //insert(C_DATA, key, "Customer", "C_DATA", writeCon);
 
                 Address address = addresses.get(rand.nextInt(addresses.size()));
+                address_use.put(address.getAddr_id(), address_use.get(address.getAddr_id()) + 1);
                 //insert(address.getAddr_id(), key, "Customer", "C_ADDR_ID", writeCon);
 
-                Customer c = new Customer("0."+(base + i) + "", key, pass, last_name, first_name, phone, email, C_SINCE, C_LAST_LOGIN, C_LOGIN, C_EXPIRATION, C_BALANCE, C_YTD_PMT, C_BIRTHDATE, C_DATA, discount, address);
+                Customer c = new Customer("0." + (base + i) + "", key, pass, last_name, first_name, phone, email, C_SINCE, C_LAST_LOGIN, C_LOGIN, C_EXPIRATION, C_BALANCE, C_YTD_PMT, C_BIRTHDATE, C_DATA, discount, address);
 
-                databaseInsert("INSERT_Costumers", "0."+(base + i) + "", "Customer", c, partial_results);
+                try {
+                    databaseInsert("INSERT_Costumers", "0." + (base + i) + "", "Customer", c, partial_results);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    client_error = true;
+                    break;
+                }
 
 
                 partial_costumers.add(c);
@@ -597,7 +649,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
         }
 
 
-        public void databaseInsert(String Operation, String key, String path, Customer value, ResultHandler results) {
+        public void databaseInsert(String Operation, String key, String path, Customer value, ResultHandler results) throws Exception {
 
             String addr_id = value.getAddress().getAddr_id();
 
@@ -607,21 +659,37 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
                 long time1 = System.currentTimeMillis();
                 tx.begin();
 
-                Address addr = pm.getObjectById(Address.class, addr_id);
-                value.setAddress(addr);
 
+                try{
+
+                    Address addr = pm.getObjectById(Address.class, addr_id);
+                    value.setAddress(addr);
+                }catch (javax.jdo.JDOObjectNotFoundException e){
+
+                    System.out.println("ADDRESS NOT FOUND: "+addr_id);
+                    System.out.println("ADDRESS USE: "+ address_use.get(addr_id));
+                    TestClass.getAddress(addr_id);
+                    String address = addr_id;
+                    while(address.equals(addr_id)){
+                         address = addresses.get(rand.nextInt(addresses.size())).getAddr_id();
+                    }
+                    System.out.println("RAND address");
+                    TestClass.getAddress(address);
+
+                    throw e;
+//                    for(Address address : addresses){
+//                        if(address.getStreet1() == null || address.getStreet1().isEmpty() ){
+//                            System.out.println("EPIC FAIL: ADDRESS IS EMPTY "+address.toString());
+//                        }
+//                    }
+                }
 
                 pm.makePersistent(value);
                 tx.commit();
                 long time2 = System.currentTimeMillis();
                 results.logResult(Operation, time2 - time1);
 
-            }
-
-            catch (Exception ec) {
-                ec.printStackTrace();
-            }
-            finally {
+            } finally {
                 if (tx.isActive()) {
                     tx.rollback();
                 }
@@ -632,7 +700,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
     }
 
     /**
-     * ************
+     * ************                                                                 ©
      * Items*
      * **************
      */
@@ -799,7 +867,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
                 String isbn = BenchmarkUtil.getRandomAString(13);
 
-                java.sql.Date avail = new java.sql.Date(System.currentTimeMillis()+rand.nextInt(1200000)); //Data when available
+                java.sql.Date avail = new java.sql.Date(System.currentTimeMillis() + rand.nextInt(1200000)); //Data when available
 
                 String dimensions = ((double) BenchmarkUtil.getRandomInt(1, 9999) / 100.0) + "x"
                         + ((double) BenchmarkUtil.getRandomInt(1, 9999) / 100.0) + "x"
@@ -808,7 +876,14 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
                 Item item = new Item(base + i, I_TITLE, pubDate, I_PUBLISHER, I_DESC, I_SUBJECT, thumbnail, image, I_COST, I_STOCK, isbn, srp, I_RELATED, I_PAGE, avail, I_BACKING, dimensions, author);
 
-                databaseInsert("INSERT_Items", (base + i) + "", column_family, item, partial_results);
+                try {
+                    databaseInsert("INSERT_Items", (base + i) + "", column_family, item, partial_results);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    client_error = true;
+
+                    break;
+                }
 
                 partial_items.add(item);
 
@@ -821,7 +896,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
             client.closeClient();
         }
 
-        public void databaseInsert(String Operation, String key, String path, Item value, ResultHandler results) {
+        public void databaseInsert(String Operation, String key, String path, Item value, ResultHandler results) throws Exception {
 
             PersistenceManager pm = pmf.getPersistenceManager();
 
@@ -833,6 +908,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
             try {
                 tx.begin();
                 Author author = pm.getObjectById(Author.class, author_id);
+
                 value.setI_AUTHOR(author);
 
 
@@ -840,12 +916,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
                 tx.commit();
 
 
-            }
-
-            catch (Exception ec) {
-                ec.printStackTrace();
-            }
-            finally {
+            } finally {
                 if (tx.isActive()) {
                     tx.rollback();
                 }
@@ -945,12 +1016,14 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
             this.insertAddress(num_addresses);
         }
 
-        public void databaseInsert(String Operation, String key, String path, Address value, ResultHandler results) {
+        public void databaseInsert(String Operation, String key, String path, Address value, ResultHandler results) throws Exception {
 
             long time1 = System.currentTimeMillis();
 
             int id = value.getCountry().getCo_id();
 
+
+            address_use.put(value.getAddr_id(),0);
 
             PersistenceManager pm = pmf.getPersistenceManager();
             Transaction tx = pm.currentTransaction();
@@ -961,16 +1034,15 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
                 Country c = pm.getObjectById(Country.class, id);
                 value.setCountry(c);
 
+                if(value.getStreet1() == null || value.getStreet1().isEmpty()){
+                    System.out.println("INSERTING NULL VALUES: " + value.toString());
+                }
+
                 pm.makePersistent(value);
                 tx.commit();
 
 
-            }
-
-            catch (Exception ec) {
-                ec.printStackTrace();
-            }
-            finally {
+            } finally {
                 if (tx.isActive()) {
                     tx.rollback();
                 }
@@ -1013,7 +1085,14 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 //            insert(country.getCo_id(), key, "Addresses", "ADDR_CO_ID", writeConsistency);
 
                 if (insertDB) {
-                    databaseInsert("INSERT_Addresses", (base + i) + "", "Addresses", address, partial_results);
+                    try {
+                        databaseInsert("INSERT_Addresses", (base + i) + "", "Addresses", address, partial_results);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        client_error = true;
+
+                        break;
+                    }
                 }
                 partial_adresses.add(address);
 
@@ -1105,7 +1184,27 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
             //insert(exchanges[i], countriesNames[i], "Countries", "CO_EXCHANGE", writeConsitency);
             //insert(currencies[i], countriesNames[i], "Countries", "CO_CURRENCY", writeConsitency);
             Country country = new Country(i, countriesNames[i], currencies[i], exchanges[i]);
-            databaseInsert(client, "INSERT_Countries", i + "", "Countries", country, results);
+
+
+//            final URL location;
+//            final String classLocation = country.getClass().getName().replace('.', '/')
+//                    + ".class";
+//            final ClassLoader loader = country.getClass().getClassLoader();
+//            if (loader == null) {
+//                System.out.println("Cannot load the class");
+//            } else {
+//                location = loader.getResource(classLocation);
+//                System.out.println("County class Class " + location);
+//            }
+
+            try {
+                databaseInsert(client, "INSERT_Countries", i + "", "Countries", country, results);
+            } catch (Exception e) {
+                e.printStackTrace();
+                client_error = true;
+
+                break;
+            }
             this.countries.add(country);
         }
         if (debug) {
@@ -1147,10 +1246,10 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
             Order_and_XACTSPopulator populator = null;
             if (i == 0) {
-                populator = new Order_and_XACTSPopulator( firstSection,base);
+                populator = new Order_and_XACTSPopulator(firstSection, base);
 
             } else {
-                populator = new Order_and_XACTSPopulator( sections,base);
+                populator = new Order_and_XACTSPopulator(sections, base);
             }
             partial_orders[i] = populator;
             Thread t = new Thread(populator);
@@ -1167,14 +1266,14 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
     }
 
-  class Order_and_XACTSPopulator implements Runnable {
+    class Order_and_XACTSPopulator implements Runnable {
 
         int num_orders;
         int base = 0;
         DatabaseExecutorInterface client;
         ResultHandler partial_results;
 
-        public Order_and_XACTSPopulator(int num_orders  , int base
+        public Order_and_XACTSPopulator(int num_orders, int base
         ) {
             client = databaseClientFactory.getDatabaseClient();
             this.num_orders = num_orders;
@@ -1183,48 +1282,64 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
         }
 
         public void run() {
-             this.insertOrder_and_CC_XACTS(num_orders);
+            this.insertOrder_and_CC_XACTS(num_orders);
         }
 
-        public void databaseInsert( Order order, List<OrderLine> orderLines , CCXact ccXact) {
+        public void databaseInsert(Order order, List<OrderLine> orderLines, CCXact ccXact) throws Exception {
 
-               PersistenceManager pm = pmf.getPersistenceManager();
-        Transaction tx = pm.currentTransaction();
+            PersistenceManager pm = pmf.getPersistenceManager();
+            Transaction tx = pm.currentTransaction();
 
-        try {
+            try {
 
-            tx.begin();
+                tx.begin();
 
-            String costumer_id =   order.getO_C_ID().getC_id();
+                String costumer_id = order.getO_C_ID().getC_id();
 
-            Customer cust = pm.getObjectById(Customer.class, costumer_id);
+                Customer cust = null;
+                try {
 
-            order.setO_C_ID(cust);
+                    cust = pm.getObjectById(Customer.class, costumer_id);
 
-            for (OrderLine orderLine : orderLines) {
+                } catch (javax.jdo.JDOObjectNotFoundException e) {
+                    System.out.println("Customer not found: "+costumer_id);
+                    TestClass.getData("Customer", costumer_id);
+                    throw e;
 
-                Item item = pm.getObjectById(Item.class, orderLine.getOL_I_ID().getI_id());
-                orderLine.setOL_I_ID(item);
-                pm.makePersistent(orderLine);
+                }
+
+                order.setO_C_ID(cust);
+
+                for (OrderLine orderLine : orderLines) {
+                    Item item = null;
+                    try {
+
+
+                        item = pm.getObjectById(Item.class, orderLine.getOL_I_ID().getI_id());
+                    } catch (javax.jdo.JDOObjectNotFoundException e) {
+                        System.out.println("Cant find key :" + orderLine.getOL_I_ID().getI_id());
+                        e.printStackTrace();
+                        throw e;
+
+                    }
+
+                    orderLine.setOL_I_ID(item);
+                    pm.makePersistent(orderLine);
+                }
+                order.setOrderlines(orderLines);
+                pm.makePersistent(order);
+
+                pm.makePersistent(ccXact);
+
+                tx.commit();
+
+
+            } finally {
+                if (tx.isActive()) {
+                    tx.rollback();
+                }
+                pm.close();
             }
-            order.setOrderlines(orderLines);
-            pm.makePersistent(order);
-
-            pm.makePersistent(ccXact);
-
-            tx.commit();
-
-        }catch (Exception e){
-            e.printStackTrace();
-
-        }
-
-        finally {
-            if (tx.isActive()) {
-                tx.rollback();
-            }
-            pm.close();
-        }
 
 
         }
@@ -1242,7 +1357,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 //            // ColumnPath path = new ColumnPath(column_family);
 //            // path.setSuper_column("ids".getBytes());
 //
-            NodeKeyGenerator nodeKeyGenerator =  new NodeKeyGenerator(0);
+            NodeKeyGenerator nodeKeyGenerator = new NodeKeyGenerator(0);
 
             for (int z = 0; z < number_keys; z++) {
 
@@ -1276,7 +1391,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
                 O_TOTAL = O_SUB_TOTAL + O_TAX;
                 //insertInSuperColumn(O_TOTAL, O_C_ID, column_family, O_ID + "", "O_TOTAL", write_con);
 
-                call.add(Calendar.DAY_OF_YEAR, -1*rand.nextInt(60)+1);
+                call.add(Calendar.DAY_OF_YEAR, -1 * rand.nextInt(60) + 1);
                 O_SHIP_DATE = new java.sql.Date(call.getTime().getTime());
                 //insertInSuperColumn(O_SHIP_DATE, O_C_ID, column_family, O_ID + "", "O_SHIP_DATE", write_con);
 
@@ -1319,14 +1434,14 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
                     float OL_DISCOUNT;
                     String OL_COMMENT;
 
-                    OL_ID = order_id+"."+i;
+                    OL_ID = order_id + "." + i;
 
 
                     OL_I_ID = items.get(rand.nextInt(items.size()));
 
                     OL_QTY = rand.nextInt(4) + 1;
 
-                    OL_DISCOUNT = (float) rand.nextInt(30)/100f;
+                    OL_DISCOUNT = (float) rand.nextInt(30) / 100f;
 
                     OL_COMMENT = null;
 
@@ -1338,7 +1453,6 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 //
 
 
-
 //
                 String CX_TYPE;
                 int CX_NUM;
@@ -1347,10 +1461,10 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
                 double CX_XACT_AMT;
                 int CX_CO_ID; //Order.getID;
 
-                table= "CC_XACTS";
+                table = "CC_XACTS";
 
                 CX_NUM = BenchmarkUtil.getRandomNString(16);
-                int key = base+z;
+                int key = base + z;
 
                 CX_TYPE = credit_cards[BenchmarkUtil.getRandomInt(0, credit_cards.length - 1)];
 
@@ -1368,8 +1482,14 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
                 CCXact ccXact = new CCXact(CX_TYPE, CX_NUM, CX_NAME, CX_EXPIRY,/* CX_AUTH_ID,*/ O_TOTAL,
                         O_SHIP_DATE, /* 1 + _counter, */ order.getO_ID(), country_id.getName());
 
-                databaseInsert(order, orderLines,ccXact);
+                try {
+                    databaseInsert(order, orderLines, ccXact);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    client_error = true;
 
+                    break;
+                }
 
 
 //                O_ID++;
@@ -1381,7 +1501,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
             barrier.countDown();
             client.closeClient();
 
-       }
+        }
 
         public ResultHandler returnResults() {
             return partial_results;

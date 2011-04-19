@@ -27,10 +27,11 @@ import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransportException;
 import org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.*;
-import org.uminho.gsd.benchmarks.TPCW_Generic.BuyingResult;
+import org.uminho.gsd.benchmarks.generic.BuyingResult;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkNodeID;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.BenchmarkUtil;
+import org.uminho.gsd.benchmarks.helpers.ThinkTime;
 import org.uminho.gsd.benchmarks.interfaces.Entity;
 import org.uminho.gsd.benchmarks.interfaces.KeyGenerator;
 import org.uminho.gsd.benchmarks.interfaces.Workload.Operation;
@@ -42,8 +43,6 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**
@@ -51,6 +50,16 @@ import java.util.logging.Logger;
  */
 public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
+    /**
+     * The global executer counter
+     */
+    private static int global_executor_counter = 0;
+
+
+    /**
+     * The executor id
+     */
+    private int executor_id = 0;
 
     /**
      * Cassandra nodes connection info*
@@ -72,7 +81,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
     /**
      * Think time*
      */
-    private int simulatedDelay;
+    private long simulatedDelay;
     /**
      * The number of keys to fetch from the database in each iteration*
      */
@@ -141,7 +150,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
      */
     List<String> keyspace_column_families;
 
-    
+
     ArrayList<String> operations = new ArrayList<String>();
 
     /**
@@ -199,6 +208,12 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
                 System.out.println("[ERROR] FAILED TO CONNECT TO:" + host + ":port:" + connections.get(host) + " -> CLIENT IGNORED ");
                 //Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
             }
+
+        }
+
+        if (clients.isEmpty()) {
+            System.out.println("No available connections");
+            System.exit(0);
         }
 
         keyspace_column_families = new ArrayList<String>();
@@ -273,6 +288,9 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
     public void start(WorkloadGeneratorInterface workload, BenchmarkNodeID nodeId, int operation_number, ResultHandler handler) {
 
+        global_executor_counter++;
+        executor_id = global_executor_counter;
+
         client_result_handler = handler;
 
         for (int operation = 0; operation < operation_number; operation++) {
@@ -284,20 +302,26 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
                 long end_time = System.currentTimeMillis();
                 client_result_handler.logResult(op.getOperation(), (end_time - init_time));
 
-                simulatedDelay =(int)((-Math.log(random.nextDouble())*7) *1000d);
-                if(simulatedDelay>70000){
-                    simulatedDelay=70000;
+                simulatedDelay = ThinkTime.getThinkTime();
+
+                if (simulatedDelay > 0) {
+                    Thread.sleep(simulatedDelay);
                 }
-                Thread.sleep(simulatedDelay);
+
 
             } catch (NoSuchFieldException e) {
                 System.out.println("[ERROR:] THIS OPERATION DOES NOT EXIST: " + e.getMessage());
+                break;
             } catch (InterruptedException e) {
                 System.out.println("[ERROR:] THINK TIME AFTER METHOD EXECUTION INTERRUPTED: " + e.getMessage());
-            }catch (Exception e){
-                e.printStackTrace();
-            }
+                break;
 
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("-- Error : Client " + executor_id + " going down....");
+                break;
+
+            }
 
         }
 
@@ -309,18 +333,18 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
     }
 
-    public void execute(Operation op) throws NoSuchFieldException {
+    public void execute(Operation op) throws Exception {
         executeMethod(op);
     }
 
-    public void executeMethod(Operation op) throws NoSuchFieldException {
+    public void executeMethod(Operation op) throws Exception {
 
         if (op == null) {
             System.out.println("[ERROR]: NULL OPERATION");
             return;
         }
 
-        operations.add(op.getOperation());        
+        operations.add(op.getOperation());
 
         String method_name = op.getOperation();
 
@@ -330,6 +354,8 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
             fields.add("I_TITLE");
             fields.add("I_STOCK");
             Map<String, Map<String, Object>> items_info = rangeQuery("Item", fields, -1);
+
+
             op.setResult(items_info);
 
         } else if (method_name.equalsIgnoreCase("Get_Stock_And_Products_after_increment")) {
@@ -482,7 +508,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         }
     }
 
-    public BuyingResult buyItem(String item_id, int qty) {
+    public BuyingResult buyItem(String item_id, int qty) throws Exception {
         long init_time = System.currentTimeMillis();
         BuyingResult result = BuyCartItem(item_id, qty);
         long end_time = System.currentTimeMillis();
@@ -490,7 +516,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         return result;
     }
 
-    public Map<String, Integer> fetchCart(String cart_id) {
+    public Map<String, Integer> fetchCart(String cart_id) throws Exception {
         long init_time = System.currentTimeMillis();
         Map<String, Integer> cart = readCart(cart_id);
         long end_time = System.currentTimeMillis();
@@ -505,20 +531,20 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
      * *****************
      */
 
-    public void insertOrder(Order order,List<OrderLine> orderLines, CCXact ccXact){
+    public void insertOrder(Order order, List<OrderLine> orderLines, CCXact ccXact) throws Exception {
 
         List<ColumnOrSuperColumn> order_order_lines = new ArrayList<ColumnOrSuperColumn>();
 
         ColumnOrSuperColumn order_info = getSuperColumn_to_insert("order_info", order);
         order_order_lines.add(order_info);
 
-        for (OrderLine orderLine :orderLines) {
+        for (OrderLine orderLine : orderLines) {
 
 
-                String ol_key = orderLine.getOL_ID();
+            String ol_key = orderLine.getOL_ID();
 
-                ColumnOrSuperColumn order_line_info = getSuperColumn_to_insert(ol_key, orderLine);
-                order_order_lines.add(order_line_info);
+            ColumnOrSuperColumn order_line_info = getSuperColumn_to_insert(ol_key, orderLine);
+            order_order_lines.add(order_line_info);
 
         }
         batch_mutate(order.getO_ID(), "orders", order_order_lines, TRANSACTIONAL_CONSISTENCY_LEVEL);
@@ -532,7 +558,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
     }
 
-    public ColumnOrSuperColumn getSuperColumn_to_insert(String super_c, Entity value) {
+    public ColumnOrSuperColumn getSuperColumn_to_insert(String super_c, Entity value) throws Exception {
 
         TreeMap<String, Object> fieldsToInsert;
         fieldsToInsert = value.getValuesToInsert();
@@ -565,7 +591,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         return column_or_superColumn;
     }
 
-    public Object insert(String key, String path, Entity value) {
+    public Object insert(String key, String path, Entity value) throws Exception {
 
         TreeMap<String, Object> fieldsToInsert;
         fieldsToInsert = value.getValuesToInsert();
@@ -617,7 +643,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         return null;
     }
 
-    public void update(String key, String path, String column, Object value, String superColumn) {
+    public void update(String key, String path, String column, Object value, String superColumn) throws Exception {
 
 
         if (superColumn != null) {
@@ -631,7 +657,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
     }
 
-    public Object read(String key, String path, String column, String superColumn) {
+    public Object read(String key, String path, String column, String superColumn) throws Exception {
 
         Object result = null;
         if (superColumn != null) {
@@ -645,7 +671,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         return result;
     }
 
-    public Map<String, Map<String, Object>> multiget(String path, List<String> keys, List<String> fields) {
+    public Map<String, Map<String, Object>> multiget(String path, List<String> keys, List<String> fields) throws Exception {
 
         ColumnParent parent = new ColumnParent(path);
 
@@ -664,17 +690,8 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         }
         Map<String, List<ColumnOrSuperColumn>> query_result = null;
 
-        try {
-            query_result = getCassandraClient().multiget_slice(keyspace, keys, parent, predicate, RANGE_CONSISTENCY_LEVEL);
-        } catch (InvalidRequestException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (UnavailableException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (TimedOutException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (TException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
+        query_result = getCassandraClient().multiget_slice(keyspace, keys, parent, predicate, RANGE_CONSISTENCY_LEVEL);
+
 
         Map<String, Map<String, Object>> results = new TreeMap<String, Map<String, Object>>();
 
@@ -717,10 +734,11 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         return results;
     }
 
-    public Map<String, Map<String, Object>> rangeQuery(String column_family, List<String> fields, int limit) {
+    public Map<String, Map<String, Object>> rangeQuery(String column_family, List<String> fields, int limit) throws Exception {
 
 
         Map<String, Map<String, Object>> results = new TreeMap<String, Map<String, Object>>();
+        long timeout = 0;
 
 
         try {
@@ -755,7 +773,10 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
             limit = (limit < 0) ? -1 : limit;
             int number_keys = 0;
 
+
             while (!terminated) {
+
+                timeout = System.currentTimeMillis();
                 List<KeySlice> keys = getCassandraClient().get_range_slices(keyspace, parent, predicate, range, RANGE_CONSISTENCY_LEVEL);
 
 
@@ -805,21 +826,17 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 
         } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println(">>Erro timeout: " + (System.currentTimeMillis() - timeout));
+            throw ex;
         }
 
         return results;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
-    public Map<String, Map<String, Map<String, Object>>> super_rangeQuery(String column_family, List<String> fields, int limit) {
+    public Map<String, Map<String, Map<String, Object>>> super_rangeQuery(String column_family, List<String> fields, int limit) throws Exception {
 
         Map<String, Map<String, Map<String, Object>>> results = new TreeMap<String, Map<String, Map<String, Object>>>();
+        long timeout = 0;
 
 
         try {
@@ -855,6 +872,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
             int number_keys = 0;
 
             while (!terminated) {
+                timeout = System.currentTimeMillis();
                 List<KeySlice> keys = getCassandraClient().get_range_slices(keyspace, parent, predicate, range, RANGE_CONSISTENCY_LEVEL);
 
 
@@ -900,60 +918,34 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 
         } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println(">>Erro timeout: " + (System.currentTimeMillis() - timeout));
+            throw ex;
         }
 
         return results;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
-    public void remove(String key, String columnFamily, String column) {
-        try {
-            //ColumnPath path = new ColumnPath(column, null, null);
-            ColumnPath path = new ColumnPath();
-            path.setColumn_family(columnFamily);
-            path.setColumn(column.getBytes());
+    public void remove(String key, String columnFamily, String column) throws Exception {
+        //ColumnPath path = new ColumnPath(column, null, null);
+        ColumnPath path = new ColumnPath();
+        path.setColumn_family(columnFamily);
+        path.setColumn(column.getBytes());
 
-            getCassandraClient().remove(keyspace, key, path, System.currentTimeMillis(), REMOVE_CONSISTENCY_LEVEL);
-            //delay();
+        getCassandraClient().remove(keyspace, key, path, System.currentTimeMillis(), REMOVE_CONSISTENCY_LEVEL);
+        //delay();
 
-        } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        }
     }
 
-    public void remove_super(String key, String columnFamily, String super_column) {
-        try {
-            //ColumnPath path = new ColumnPath(column, null, null);
-            ColumnPath path = new ColumnPath();
-            path.setColumn_family(columnFamily);
-            path.setSuper_column(super_column.getBytes());
-            getCassandraClient().remove(keyspace, key, path, System.currentTimeMillis(), REMOVE_CONSISTENCY_LEVEL);
-            //delay();
-
-        } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        }
+    public void remove_super(String key, String columnFamily, String super_column) throws Exception {
+        //ColumnPath path = new ColumnPath(column, null, null);
+        ColumnPath path = new ColumnPath();
+        path.setColumn_family(columnFamily);
+        path.setSuper_column(super_column.getBytes());
+        getCassandraClient().remove(keyspace, key, path, System.currentTimeMillis(), REMOVE_CONSISTENCY_LEVEL);
+        //delay();
     }
 
-    public void truncate(String column_family) {
+    public void truncate(String column_family) throws Exception {
 
         column_family = column_family.toLowerCase();
 
@@ -964,70 +956,58 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
             return;
         }
 
-        try {
+        SlicePredicate predicate = new SlicePredicate();
+        SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 3000);
 
+        ColumnParent parent = new ColumnParent();
+        parent.setColumn_family(column_family);
+        predicate.setSlice_range(range);
 
-            SlicePredicate predicate = new SlicePredicate();
-            SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 3000);
+        String last_key = "";
+        int alive_keys = 0;
+        int total_keys = 0;
+        boolean terminated = false;
 
-            ColumnParent parent = new ColumnParent();
-            parent.setColumn_family(column_family);
-            predicate.setSlice_range(range);
+        KeyRange krange = new KeyRange();
+        krange.setStart_key(last_key);
+        krange.setEnd_key("");
+        krange.setCount(search_slice_ratio);
 
-            String last_key = "";
-            int alive_keys = 0;
-            int total_keys = 0;
-            boolean terminated = false;
+        while (!terminated) {
+            Cassandra.Client c = getCassandraClient();
+            List<KeySlice> keys = c.get_range_slices(keyspace, parent, predicate, krange, RANGE_CONSISTENCY_LEVEL);
+            //delay();
 
-            KeyRange krange = new KeyRange();
-            krange.setStart_key(last_key);
-            krange.setEnd_key("");
-            krange.setCount(search_slice_ratio);
-
-            while (!terminated) {
-                Cassandra.Client c = getCassandraClient();
-                List<KeySlice> keys = c.get_range_slices(keyspace, parent, predicate, krange, RANGE_CONSISTENCY_LEVEL);
-                //delay();
-
-                if (keys.isEmpty()) {
-                    System.out.println("The key range is empty");
-                } else {
-                    last_key = keys.get(keys.size() - 1).key;
-                    krange.setStart_key(last_key);
-                }
-                // Map<String, List<ColumnOrSuperColumn>> results = getCassandraClient().multiget_slice(Keyspace, keys, parent, predicate, ConsistencyLevel.ONE);
-                ColumnPath path = new ColumnPath();
-                path.setColumn_family(column_family);
-                for (KeySlice key : keys) {
-
-
-                    if (!key.columns.isEmpty()) {
-                        getCassandraClient().remove(keyspace, key.key, path, System.currentTimeMillis(), REMOVE_CONSISTENCY_LEVEL);
-                        alive_keys++;
-                    }
-                    total_keys++;
-                }
-                if (keys.size() < search_slice_ratio) {
-                    terminated = true;
-                }
+            if (keys.isEmpty()) {
+                System.out.println("The key range is empty");
+            } else {
+                last_key = keys.get(keys.size() - 1).key;
+                krange.setStart_key(last_key);
             }
-            System.out.println("[Column family " + column_family + "] total keys:" + total_keys + " alive keys:" + alive_keys);
-        } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
+            // Map<String, List<ColumnOrSuperColumn>> results = getCassandraClient().multiget_slice(Keyspace, keys, parent, predicate, ConsistencyLevel.ONE);
+            ColumnPath path = new ColumnPath();
+            path.setColumn_family(column_family);
+            for (KeySlice key : keys) {
+
+
+                if (!key.columns.isEmpty()) {
+                    getCassandraClient().remove(keyspace, key.key, path, System.currentTimeMillis(), REMOVE_CONSISTENCY_LEVEL);
+                    alive_keys++;
+                }
+                total_keys++;
+            }
+            if (keys.size() < search_slice_ratio) {
+                terminated = true;
+            }
         }
+        System.out.println("[Column family " + column_family + "] total keys:" + total_keys + " alive keys:" + alive_keys);
     }
 
-    public void index(String key, String path, Object value) {
+    public void index(String key, String path, Object value) throws Exception {
         insert(new byte[]{1}, key, path, value.toString(), WRITE_CONSISTENCY_LEVEL);
     }
 
-    public void index(String key, String path, String indexed_key, Map<String, Object> value) {
+    public void index(String key, String path, String indexed_key, Map<String, Object> value) throws Exception {
 
         List<Column> index_columns = new ArrayList<Column>();
 
@@ -1054,7 +1034,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
      * *******************
      */
 
-    public void batch_mutate(String key, String columnFamily, List<ColumnOrSuperColumn> mutation_columns, ConsistencyLevel level) {
+    public void batch_mutate(String key, String columnFamily, List<ColumnOrSuperColumn> mutation_columns, ConsistencyLevel level) throws Exception {
 
         List<Mutation> mutations_List = new ArrayList<Mutation>();
 
@@ -1071,20 +1051,10 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
         TreeMap<String, List<ColumnOrSuperColumn>> mutations = new TreeMap<String, List<ColumnOrSuperColumn>>();
         mutations.put(columnFamily, mutation_columns);
-        try {
-            getCassandraClient().batch_mutate(keyspace, mutationMap, level);
-        } catch (InvalidRequestException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (UnavailableException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (TimedOutException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (TException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
+        getCassandraClient().batch_mutate(keyspace, mutationMap, level);
     }
 
-    public void batch_mutate_columns(String key, String columnFamily, List<Column> mutation_columns, ConsistencyLevel level) {
+    public void batch_mutate_columns(String key, String columnFamily, List<Column> mutation_columns, ConsistencyLevel level) throws Exception {
 
         List<Mutation> mutations_List = new ArrayList<Mutation>();
 
@@ -1104,194 +1074,122 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
         //TreeMap<String, List<ColumnOrSuperColumn>> mutations = new TreeMap<String, List<ColumnOrSuperColumn>>();
         //mutations.put(columnFamily, mutation_columns);
-        try {
-            getCassandraClient().batch_mutate(keyspace, mutationMap, level);
-        } catch (InvalidRequestException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (UnavailableException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (TimedOutException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (TException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
+        getCassandraClient().batch_mutate(keyspace, mutationMap, level);
     }
 
-    public void insert(Object value, String key, String column_family, String column, ConsistencyLevel writeConsistency) {
-        try {
+    public void insert(Object value, String key, String column_family, String column, ConsistencyLevel writeConsistency) throws Exception {
 
-            ColumnPath path = new ColumnPath();
-            path.setColumn_family(column_family);
-            path.setColumn(column.getBytes());
-            byte[] valueBytes = BenchmarkUtil.getBytes(value);
+        ColumnPath path = new ColumnPath();
+        path.setColumn_family(column_family);
+        path.setColumn(column.getBytes());
+        byte[] valueBytes = BenchmarkUtil.getBytes(value);
 
-            getCassandraClient().insert(keyspace, key, path, valueBytes, System.currentTimeMillis(), writeConsistency);
-            // simple_time += time;  s
-            // simple_inserts++;
-            // System.out.println("Time to insert: " + time);
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TimedOutException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
+        getCassandraClient().insert(keyspace, key, path, valueBytes, System.currentTimeMillis(), writeConsistency);
         //delay();
     }
 
-    public void insertInSuperColumn(Object value, String key, String column_family, String SuperColumn, String Column, ConsistencyLevel writeConsistency) {
-        try {
-            // ColumnPath path = new ColumnPath(column_family, SuperColumn.getBytes(), Column.getBytes());
-            ColumnPath path = new ColumnPath(column_family);
-            path.setSuper_column(SuperColumn.getBytes());
-            path.setColumn(Column.getBytes());
+    public void insertInSuperColumn(Object value, String key, String column_family, String SuperColumn, String Column, ConsistencyLevel writeConsistency) throws Exception {
+        // ColumnPath path = new ColumnPath(column_family, SuperColumn.getBytes(), Column.getBytes());
+        ColumnPath path = new ColumnPath(column_family);
+        path.setSuper_column(SuperColumn.getBytes());
+        path.setColumn(Column.getBytes());
 
-            byte[] valueBytes = BenchmarkUtil.getBytes(value);
-            getCassandraClient().insert(keyspace, key, path, valueBytes, System.currentTimeMillis(), writeConsistency);
 
-        } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        byte[] valueBytes = BenchmarkUtil.getBytes(value);
+        getCassandraClient().insert(keyspace, key, path, valueBytes, System.currentTimeMillis(), writeConsistency);
         //delay();
     }
 
-    public Object readfromColumn(String key, String ColumnFamily, String column, ConsistencyLevel con) {
+    public Object readfromColumn(String key, String ColumnFamily, String column, ConsistencyLevel con) throws Exception {
+        ColumnPath path = new ColumnPath();
+        path.setColumn_family(ColumnFamily);
+        path.setColumn(column.getBytes());
+        byte[] value = null;
         try {
-            ColumnPath path = new ColumnPath();
-            path.setColumn_family(ColumnFamily);
-            path.setColumn(column.getBytes());
-            byte[] value = getCassandraClient().get(keyspace, key, path, con).column.value;
-            Object o = BenchmarkUtil.toObject(value);
-            //delay();
-            return o;
-
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (NotFoundException ex) {
+            value = getCassandraClient().get(keyspace, key, path, con).column.value;
+        } catch (NotFoundException e) {
             return null;
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        return null;
+        Object o = BenchmarkUtil.toObject(value);
+        //delay();
+        return o;
+
     }
 
-    public Object readfromSuperColumn(String familykey, String columnFamily, String column, String superColumnKey, ConsistencyLevel con) {
+    public Object readfromSuperColumn(String familykey, String columnFamily, String column, String superColumnKey, ConsistencyLevel con) throws Exception {
 
+        //   ColumnPath path = new ColumnPath(columnFamily, superColumnKey.getBytes(), column.getBytes());
+        ColumnPath path = new ColumnPath(columnFamily);
+        path.setSuper_column(superColumnKey.getBytes());
+        path.setColumn(column.getBytes());
+
+        byte[] value = null;
         try {
-
-            //   ColumnPath path = new ColumnPath(columnFamily, superColumnKey.getBytes(), column.getBytes());
-            ColumnPath path = new ColumnPath(columnFamily);
-            path.setSuper_column(superColumnKey.getBytes());
-            path.setColumn(column.getBytes());
-            byte[] value = getCassandraClient().get(keyspace, familykey, path, con).column.value;
-            Object o;
-            o = BenchmarkUtil.toObject(value);
-            //delay();
-            return o;
-
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (NotFoundException ex) {
+            value = getCassandraClient().get(keyspace, familykey, path, con).column.value;
+        } catch (NotFoundException e) {
             return null;
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return null;
-    }
 
-    private List<ColumnOrSuperColumn> getListColumns(String key, String columnFamily, String superColumn, List<String> column_names, ConsistencyLevel con) {
-
-        try {
-            ColumnParent parent = new ColumnParent(columnFamily);
-            if (superColumn != null) {
-                parent.setSuper_column(superColumn.getBytes());
-            }
-
-            SlicePredicate fields = new SlicePredicate();
-            List<byte[]> field_names = new ArrayList<byte[]>();
-            for (String field : column_names) {
-                field_names.add(field.getBytes());
-            }
-            fields.setColumn_names(field_names);
-
-
-            List<ColumnOrSuperColumn> columns = getCassandraClient().get_slice(keyspace, key, parent, fields, con);
-            return columns;
-
-        } catch (InvalidRequestException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (UnavailableException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (TimedOutException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (TException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
-        return null;
+        Object o;
+        o = BenchmarkUtil.toObject(value);
+        //delay();
+        return o;
 
 
     }
 
-    private Map<String, Object> getColumnMap(String key, String columnFamily, List<String> column_names, ConsistencyLevel con) {
+    private List<ColumnOrSuperColumn> getListColumns(String key, String columnFamily, String superColumn, List<String> column_names, ConsistencyLevel con) throws Exception {
 
-        try {
-            ColumnParent parent = new ColumnParent(columnFamily);
-
-
-            SlicePredicate fields = new SlicePredicate();
-            List<byte[]> field_names = new ArrayList<byte[]>();
-            for (String field : column_names) {
-                field_names.add(field.getBytes());
-            }
-            fields.setColumn_names(field_names);
-
-
-            List<ColumnOrSuperColumn> columns = getCassandraClient().get_slice(keyspace, key, parent, fields, con);
-
-            Map<String, Object> value_map = new TreeMap<String, Object>();
-
-            for (ColumnOrSuperColumn columnOrSuperColumn : columns) {
-                Column column = columnOrSuperColumn.getColumn();
-                String name = new String(column.getName());
-                Object value = BenchmarkUtil.toObject(column.getValue());
-                value_map.put(name, value);
-
-
-            }
-            return value_map;
-
-        } catch (InvalidRequestException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (UnavailableException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (TimedOutException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (TException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        ColumnParent parent = new ColumnParent(columnFamily);
+        if (superColumn != null) {
+            parent.setSuper_column(superColumn.getBytes());
         }
-        return null;
+
+        SlicePredicate fields = new SlicePredicate();
+        List<byte[]> field_names = new ArrayList<byte[]>();
+        for (String field : column_names) {
+            field_names.add(field.getBytes());
+        }
+        fields.setColumn_names(field_names);
+
+
+        List<ColumnOrSuperColumn> columns = getCassandraClient().get_slice(keyspace, key, parent, fields, con);
+        return columns;
 
 
     }
 
-    private TreeMap<String, Map<String, Object>> getMappedColumnsFromSuperCF(String path, String key, List<String> names, int limit, ConsistencyLevel consistencyLevel) {
+    private Map<String, Object> getColumnMap(String key, String columnFamily, List<String> column_names, ConsistencyLevel con) throws Exception {
+
+        ColumnParent parent = new ColumnParent(columnFamily);
+
+
+        SlicePredicate fields = new SlicePredicate();
+        List<byte[]> field_names = new ArrayList<byte[]>();
+        for (String field : column_names) {
+            field_names.add(field.getBytes());
+        }
+        fields.setColumn_names(field_names);
+
+
+        List<ColumnOrSuperColumn> columns = getCassandraClient().get_slice(keyspace, key, parent, fields, con);
+
+        Map<String, Object> value_map = new TreeMap<String, Object>();
+
+        for (ColumnOrSuperColumn columnOrSuperColumn : columns) {
+            Column column = columnOrSuperColumn.getColumn();
+            String name = new String(column.getName());
+            Object value = BenchmarkUtil.toObject(column.getValue());
+            value_map.put(name, value);
+
+
+        }
+        return value_map;
+
+    }
+
+    private TreeMap<String, Map<String, Object>> getMappedColumnsFromSuperCF(String path, String key, List<String> names, int limit, ConsistencyLevel consistencyLevel) throws Exception {
 
         ColumnParent parent = new ColumnParent();
         parent.setColumn_family(path);
@@ -1305,49 +1203,37 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 //        }
         // predicate.setColumn_names(column_names);
         predicate.setSlice_range(new SliceRange("".getBytes(), "".getBytes(), false, limit));
-        try {
 
-            List<ColumnOrSuperColumn> superColumns = getCassandraClient().get_slice(keyspace, key, parent, predicate, consistencyLevel);
+        List<ColumnOrSuperColumn> superColumns = getCassandraClient().get_slice(keyspace, key, parent, predicate, consistencyLevel);
 
-            TreeMap<String, Map<String, Object>> result = new TreeMap<String, Map<String, Object>>();
-            for (ColumnOrSuperColumn sc : superColumns) {
+        TreeMap<String, Map<String, Object>> result = new TreeMap<String, Map<String, Object>>();
+        for (ColumnOrSuperColumn sc : superColumns) {
 
-                List<Column> columns = sc.getSuper_column().getColumns();
+            List<Column> columns = sc.getSuper_column().getColumns();
 
-                Map<String, Object> value_map = new TreeMap<String, Object>();
+            Map<String, Object> value_map = new TreeMap<String, Object>();
 
-                for (Column column : columns) {
-                    String name = new String(column.getName());
-                    if (names.contains(name)) {
-                        Object value = BenchmarkUtil.toObject(column.getValue());
-                        value_map.put(name, value);
-
-
-                    }
+            for (Column column : columns) {
+                String name = new String(column.getName());
+                if (names.contains(name)) {
+                    Object value = BenchmarkUtil.toObject(column.getValue());
+                    value_map.put(name, value);
 
 
                 }
 
 
-                result.put(new String(sc.super_column.name), value_map);
-
             }
-            //delay();
-            return result;
 
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
+
+            result.put(new String(sc.super_column.name), value_map);
+
         }
-        return null;
+        //delay();
+        return result;
     }
 
-    private TreeMap<String, List<Column>> getAllColumnsFromSuperCF(String path, String key, ConsistencyLevel consistencyLevel) {
+    private TreeMap<String, List<Column>> getAllColumnsFromSuperCF(String path, String key, ConsistencyLevel consistencyLevel) throws Exception {
 
         ColumnParent parent = new ColumnParent();
         parent.setColumn_family(path);
@@ -1356,36 +1242,25 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
         SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 300);
         predicate.setSlice_range(range);
-        try {
 
 
-            List<ColumnOrSuperColumn> superColumns = getCassandraClient().get_slice(keyspace, key, parent, predicate, consistencyLevel);
+        List<ColumnOrSuperColumn> superColumns = getCassandraClient().get_slice(keyspace, key, parent, predicate, consistencyLevel);
 
 
-            TreeMap<String, List<Column>> result = new TreeMap<String, List<Column>>();
-            for (ColumnOrSuperColumn sc : superColumns) {
+        TreeMap<String, List<Column>> result = new TreeMap<String, List<Column>>();
+        for (ColumnOrSuperColumn sc : superColumns) {
 
-                List<Column> columns = sc.getSuper_column().getColumns();
+            List<Column> columns = sc.getSuper_column().getColumns();
 
-                result.put(new String(sc.super_column.name), columns);
+            result.put(new String(sc.super_column.name), columns);
 
-            }
-            //delay();
-            return result;
-
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return null;
+        //delay();
+        return result;
+
     }
 
-    private TreeMap<String, Map<String, Object>> getAllColumnsMapFromSuperCF(String path, String key, ConsistencyLevel consistencyLevel) {
+    private TreeMap<String, Map<String, Object>> getAllColumnsMapFromSuperCF(String path, String key, ConsistencyLevel consistencyLevel) throws Exception {
 
         ColumnParent parent = new ColumnParent();
         parent.setColumn_family(path);
@@ -1399,64 +1274,17 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         boolean terminated = false;
 
 
-        try {
-
-            while (!terminated) {
-
-                List<ColumnOrSuperColumn> result = getCassandraClient().get_slice(keyspace, key, parent, predicate, consistencyLevel);
-                if (result.size() < 500) {
-                    terminated = true;
-                } else {
-                    byte[] last_column = result.get(result.size() - 1).getSuper_column().name;
-                    range = new SliceRange(last_column, "".getBytes(), false, 500);
-                    predicate.setSlice_range(range);
-                }
-
-
-                for (ColumnOrSuperColumn columnOrSuperColumn : result) {
-                    SuperColumn superColumn = columnOrSuperColumn.getSuper_column();
-                    Map<String, Object> map = new TreeMap<String, Object>();
-                    for (Column col : superColumn.getColumns()) {
-                        String name = new String(col.getName());
-                        Object value = BenchmarkUtil.toObject(col.getValue());
-                        map.put(name, value);
-                    }
-                    String super_name = new String(superColumn.getName());
-                    value_map.put(super_name, map);
-                }
-
-            }
-
-
-            return value_map;
-
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return null;
-    }
-
-    private TreeMap<String, Map<String, Object>> getAllColumnsMapFromSuperCFLimit(String path, String key, int limit, ConsistencyLevel consistencyLevel) {
-
-        ColumnParent parent = new ColumnParent();
-        parent.setColumn_family(path);
-
-        SlicePredicate predicate = new SlicePredicate();
-
-        SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, limit);
-        predicate.setSlice_range(range);
-
-        TreeMap<String, Map<String, Object>> value_map = new TreeMap<String, Map<String, Object>>();
-
-        try {
+        while (!terminated) {
 
             List<ColumnOrSuperColumn> result = getCassandraClient().get_slice(keyspace, key, parent, predicate, consistencyLevel);
+            if (result.size() < 500) {
+                terminated = true;
+            } else {
+                byte[] last_column = result.get(result.size() - 1).getSuper_column().name;
+                range = new SliceRange(last_column, "".getBytes(), false, 500);
+                predicate.setSlice_range(range);
+            }
+
 
             for (ColumnOrSuperColumn columnOrSuperColumn : result) {
                 SuperColumn superColumn = columnOrSuperColumn.getSuper_column();
@@ -1470,26 +1298,52 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
                 value_map.put(super_name, map);
             }
 
-            return value_map;
-
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return null;
+
+
+        return value_map;
+
+    }
+
+    private TreeMap<String, Map<String, Object>> getAllColumnsMapFromSuperCFLimit(String path, String key, int limit, ConsistencyLevel consistencyLevel) throws Exception {
+
+        ColumnParent parent = new ColumnParent();
+        parent.setColumn_family(path);
+
+        SlicePredicate predicate = new SlicePredicate();
+
+        SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, limit);
+        predicate.setSlice_range(range);
+
+        TreeMap<String, Map<String, Object>> value_map = new TreeMap<String, Map<String, Object>>();
+
+
+        List<ColumnOrSuperColumn> result = getCassandraClient().get_slice(keyspace, key, parent, predicate, consistencyLevel);
+
+        for (ColumnOrSuperColumn columnOrSuperColumn : result) {
+            SuperColumn superColumn = columnOrSuperColumn.getSuper_column();
+            Map<String, Object> map = new TreeMap<String, Object>();
+            for (Column col : superColumn.getColumns()) {
+                String name = new String(col.getName());
+                Object value = BenchmarkUtil.toObject(col.getValue());
+                map.put(name, value);
+            }
+            String super_name = new String(superColumn.getName());
+            value_map.put(super_name, map);
+        }
+
+        return value_map;
+
     }
 
 
     /********************************************************/
     /****  TPCW benchmark consistency and old operations ****/
-    /********************************************************/
+    /**
+     * ****************************************************
+     */
 
-    public void setItemStocks(int initial_stock) {
+    public void setItemStocks(int initial_stock) throws Exception {
 
 
         ArrayList<String> fields = new ArrayList<String>();
@@ -1504,7 +1358,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
     }
 
-    public Map<String, Integer> readCart(String cart) {
+    public Map<String, Integer> readCart(String cart) throws Exception {
 
         TreeMap<String, List<Column>> columns = getAllColumnsFromSuperCF("shopping_cart_line", cart + "", TRANSACTIONAL_CONSISTENCY_LEVEL);
         Map<String, Integer> result = new TreeMap<String, Integer>();
@@ -1527,7 +1381,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
     }
 
-    public void addToCart(String cart, String item, int qty_to_add) {
+    public void addToCart(String cart, String item, int qty_to_add) throws Exception {
 
 
         Object o = readfromSuperColumn(cart + "", "shopping_cart_line", "QTY", item, TRANSACTIONAL_CONSISTENCY_LEVEL);
@@ -1540,7 +1394,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         insertInSuperColumn(qty_to_add, cart + "", "shopping_cart_line", item, "QTY", TRANSACTIONAL_CONSISTENCY_LEVEL);
     }
 
-    public BuyingResult BuyCartItem(String item, int qty) {
+    public BuyingResult BuyCartItem(String item, int qty) throws Exception {
 
         Object o = readfromColumn(item, "item", "I_STOCK", TRANSACTIONAL_CONSISTENCY_LEVEL);   //read stock
         if (o == null) {
@@ -1571,78 +1425,74 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         return BuyingResult.BOUGHT;
     }
 
-    public Map<String, Map<String, Map<String, Object>>> getResults() {
+    public Map<String, Map<String, Map<String, Object>>> getResults() throws Exception {
 
         String column_family = "results";
         Map<String, Map<String, Map<String, Object>>> results = new TreeMap<String, Map<String, Map<String, Object>>>();
-        try {
-            SlicePredicate predicate = new SlicePredicate();
-            SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 1000);
+        SlicePredicate predicate = new SlicePredicate();
+        SliceRange slice_range = new SliceRange("".getBytes(), "".getBytes(), false, 10500);
 
-            ColumnParent parent = new ColumnParent();
-            parent.setColumn_family(column_family);
-            predicate.setSlice_range(range);
+        ColumnParent parent = new ColumnParent();
+        parent.setColumn_family(column_family);
+        predicate.setSlice_range(slice_range);
 
-            String last_key = "";
+        String last_key = "";
 
-            boolean terminated = false;
 
-            while (!terminated) {
-                List<KeySlice> keys = getCassandraClient().get_range_slice(keyspace, parent, predicate, last_key, "", search_slice_ratio, ConsistencyLevel.ONE);
-                //delay();
+        KeyRange range = new KeyRange();
+        range.setStart_key("");
+        range.setEnd_key("");
+        range.setCount(search_slice_ratio);
 
-                if (keys.isEmpty()) {
-                    System.out.println("[INFO|CASSANDRA:]The key range is empty");
-                } else {
-                    last_key = keys.get(keys.size() - 1).key;
-                }
-                ColumnPath path = new ColumnPath();
-                path.setColumn_family(column_family);
-                for (KeySlice key : keys) {
-                    if (!key.columns.isEmpty()) {
-                        String key_name = key.key;    //for each client
-                        if (!results.containsKey(key_name)) {
-                            results.put(key_name, new TreeMap<String, Map<String, Object>>());
-                        }
-                        for (ColumnOrSuperColumn c : key.getColumns()) {
-                            if (c.isSetSuper_column()) {
-                                String superColumn_name = null;    //for each item
-                                try {
-                                    superColumn_name = new String(c.getSuper_column().getName(), "UTF-8");
-                                } catch (UnsupportedEncodingException e) {
-                                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-                                }
-                                if (!results.get(key_name).containsKey(superColumn_name)) {
-                                    results.get(key_name).put(superColumn_name, new TreeMap<String, Object>());
-                                }
-                                for (Column co : c.getSuper_column().columns) {
-                                    results.get(key_name).get(superColumn_name).put(new String(co.getName()), BenchmarkUtil.toObject(co.getValue()));
-                                }
+        boolean terminated = false;
+
+        while (!terminated) {
+            List<KeySlice> keys = getCassandraClient().get_range_slices(keyspace, parent, predicate, range, ConsistencyLevel.ONE);
+            //delay();
+
+            if (keys.isEmpty()) {
+                System.out.println("[INFO|CASSANDRA:]The key range is empty");
+            } else {
+                last_key = keys.get(keys.size() - 1).key;
+                range.setStart_key(last_key);
+            }
+            ColumnPath path = new ColumnPath();
+            path.setColumn_family(column_family);
+            for (KeySlice key : keys) {
+                if (!key.columns.isEmpty()) {
+                    String key_name = key.key;    //for each client
+                    if (!results.containsKey(key_name)) {
+                        results.put(key_name, new TreeMap<String, Map<String, Object>>());
+                    }
+                    for (ColumnOrSuperColumn c : key.getColumns()) {
+                        if (c.isSetSuper_column()) {
+                            String superColumn_name = null;    //for each item
+                            try {
+                                superColumn_name = new String(c.getSuper_column().getName(), "UTF-8");
+                            } catch (UnsupportedEncodingException e) {
+                                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                            }
+                            if (!results.get(key_name).containsKey(superColumn_name)) {
+                                results.get(key_name).put(superColumn_name, new TreeMap<String, Object>());
+                            }
+                            for (Column co : c.getSuper_column().columns) {
+                                results.get(key_name).get(superColumn_name).put(new String(co.getName()), BenchmarkUtil.toObject(co.getValue()));
                             }
                         }
                     }
+                }
 
-                }
-                if (keys.size() < search_slice_ratio) {
-                    terminated = true;
-                }
             }
-            return results;
-
-        } catch (TimedOutException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidRequestException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnavailableException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TException ex) {
-            Logger.getLogger(TPCWCassandraExecutor.class.getName()).log(Level.SEVERE, null, ex);
+            if (keys.size() < search_slice_ratio) {
+                terminated = true;
+            }
         }
         return results;
 
+
     }
 
-    public void buyCart(String cart_id, Customer c) {
+    public void buyCart(String cart_id, Customer c) throws Exception {
 
 
         Map<String, Integer> cart = fetchCart(cart_id);
@@ -1675,12 +1525,14 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
     /**************************************/
     /****  TPCW benchmark operations  ****/
-    /************************************/
+    /**
+     * ********************************
+     */
 
 
     //Receives an Costumer id and retrieves is  name
     //Receives a item and returns the id and thumbnail of related.
-    public void HomeOperation(int costumer, int item) {
+    public void HomeOperation(int costumer, int item) throws Exception {
 
 
         List<String> costumer_fields_names = new ArrayList<String>();
@@ -1709,7 +1561,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
     }
 
 
-    public void shoppingCartInteraction(int item, boolean create, String cart_id) {
+    public void shoppingCartInteraction(int item, boolean create, String cart_id) throws Exception {
 
         //if create cart
         if (create) {
@@ -1804,7 +1656,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
     }
 
 
-    public void CustomerRegistration(String costumer_id) {
+    public void CustomerRegistration(String costumer_id) throws Exception {
 
         String name = (BenchmarkUtil.getRandomAString(8, 13) + " " + BenchmarkUtil.getRandomAString(8, 15));
         String[] names = name.split(" ");
@@ -1884,7 +1736,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
     }
 
 
-    public String insertAdress() {
+    public String insertAdress() throws Exception {
 
 
         String ADDR_STREET1, ADDR_STREET2, ADDR_CITY, ADDR_STATE;
@@ -1903,7 +1755,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
         String key = ADDR_STREET1 + ADDR_STREET2 + ADDR_CITY + ADDR_STATE + ADDR_ZIP + country_id;
 
-        Address address = new Address(key, ADDR_STREET1, ADDR_STREET2, ADDR_CITY,
+        org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.Address address = new Address(key, ADDR_STREET1, ADDR_STREET2, ADDR_CITY,
                 ADDR_STATE, ADDR_ZIP, country_id);
 //            insert(ADDR_STREET1, key, "Addresses", "ADDR_STREET1", writeConsistency);
 //            insert(ADDR_STREET2, key, "Addresses", "ADDR_STREET2", writeConsistency);
@@ -1922,7 +1774,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         return key;
     }
 
-    public void refreshSession(String C_ID) {
+    public void refreshSession(String C_ID) throws Exception {
 
 
         List<String> columns = new ArrayList<String>();
@@ -1969,90 +1821,90 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
     public void BuyRequest(String shopping_id) {
 
-        operations.add("REQUEST ENTRY: "+shopping_id);
+        operations.add("REQUEST ENTRY: " + shopping_id);
 
-        try{
+        try {
 
-        List<String> names = new ArrayList<String>();
-        names.add("SCL_QTY");
-        names.add("SCL_COST");
+            List<String> names = new ArrayList<String>();
+            names.add("SCL_QTY");
+            names.add("SCL_COST");
 
-        Map<String, Map<String, Object>> items = getMappedColumnsFromSuperCF("shopping_cart", shopping_id, names, 100, READ_CONSISTENCY_LEVEL);
+            Map<String, Map<String, Object>> items = getMappedColumnsFromSuperCF("shopping_cart", shopping_id, names, 100, READ_CONSISTENCY_LEVEL);
 
-        float total_cost = 0;
-        int total_qty = 0;
-
-
-        for (String superColumnName : items.keySet()) {
-            if (superColumnName != "cart_info") {
-                Map<String, Object> columns = items.get(superColumnName);
-                float cost = 0f;
-                int qty = 0;
-
-                for (Map.Entry col : columns.entrySet()) {
-                    String name = (String) col.getKey();
-                    Object value = col.getValue();
+            float total_cost = 0;
+            int total_qty = 0;
 
 
-                    if (name.equals("SCL_COST")) {
+            for (String superColumnName : items.keySet()) {
+                if (superColumnName != "cart_info") {
+                    Map<String, Object> columns = items.get(superColumnName);
+                    float cost = 0f;
+                    int qty = 0;
 
-                        if (value instanceof Double) {
-                            double costd = (Double) value;
-                            cost = (float) costd;
+                    for (Map.Entry col : columns.entrySet()) {
+                        String name = (String) col.getKey();
+                        Object value = col.getValue();
+
+
+                        if (name.equals("SCL_COST")) {
+
+                            if (value instanceof Double) {
+                                double costd = (Double) value;
+                                cost = (float) costd;
+                            }
+                            if (value instanceof Float) {
+                                cost = (Float) value;
+                            }
                         }
-                        if (value instanceof Float) {
-                            cost = (Float) value;
+
+                        if (name.equals("SCL_QTY")) {
+                            qty = (Integer) value;
+
                         }
+
                     }
 
-                    if (name.equals("SCL_QTY")) {
-                        qty = (Integer) value;
-
-                    }
-
+                    total_qty += qty;
+                    total_cost += (cost * qty);
                 }
-
-                total_qty += qty;
-                total_cost += (cost * qty);
             }
-        }
 
-        float SC_SUB_TOTAL = total_cost * (1 - 0.2f);//cheats...
-        float SC_TAX = SC_SUB_TOTAL * 0.0825f;
-        float SC_SHIP_COST = 3.00f + (1.00f * total_qty);
-        float SC_TOTAL = SC_SUB_TOTAL + SC_SHIP_COST + SC_TAX;
-
-
-        List<Column> column_insert = new ArrayList<Column>();
+            float SC_SUB_TOTAL = total_cost * (1 - 0.2f);//cheats...
+            float SC_TAX = SC_SUB_TOTAL * 0.0825f;
+            float SC_SHIP_COST = 3.00f + (1.00f * total_qty);
+            float SC_TOTAL = SC_SUB_TOTAL + SC_SHIP_COST + SC_TAX;
 
 
-        Column sub_total = new Column("SC_SUB_TOTAL".getBytes(), BenchmarkUtil.getBytes(SC_SUB_TOTAL), System.currentTimeMillis());
-        Column tax = new Column("SC_TAX".getBytes(), BenchmarkUtil.getBytes(SC_TAX), System.currentTimeMillis());
-        Column ship = new Column("SC_SHIP_COST".getBytes(), BenchmarkUtil.getBytes(SC_SHIP_COST), System.currentTimeMillis());
-        Column total = new Column("SC_TOTAL".getBytes(), BenchmarkUtil.getBytes(SC_TOTAL), System.currentTimeMillis());
-        Column date = new Column("SC_DATE".getBytes(), BenchmarkUtil.getBytes(new Timestamp(System.currentTimeMillis())), System.currentTimeMillis());
-        column_insert.add(sub_total);
-        column_insert.add(tax);
-        column_insert.add(ship);
-        column_insert.add(total);
-        column_insert.add(date);
+            List<Column> column_insert = new ArrayList<Column>();
 
 
-        SuperColumn s_column = new SuperColumn("cart_info".getBytes(), column_insert);
+            Column sub_total = new Column("SC_SUB_TOTAL".getBytes(), BenchmarkUtil.getBytes(SC_SUB_TOTAL), System.currentTimeMillis());
+            Column tax = new Column("SC_TAX".getBytes(), BenchmarkUtil.getBytes(SC_TAX), System.currentTimeMillis());
+            Column ship = new Column("SC_SHIP_COST".getBytes(), BenchmarkUtil.getBytes(SC_SHIP_COST), System.currentTimeMillis());
+            Column total = new Column("SC_TOTAL".getBytes(), BenchmarkUtil.getBytes(SC_TOTAL), System.currentTimeMillis());
+            Column date = new Column("SC_DATE".getBytes(), BenchmarkUtil.getBytes(new Timestamp(System.currentTimeMillis())), System.currentTimeMillis());
+            column_insert.add(sub_total);
+            column_insert.add(tax);
+            column_insert.add(ship);
+            column_insert.add(total);
+            column_insert.add(date);
 
-        ColumnOrSuperColumn superColumn = new ColumnOrSuperColumn();
-        superColumn.setSuper_column(s_column);
-        List<ColumnOrSuperColumn> mutations = new ArrayList<ColumnOrSuperColumn>();
-        mutations.add(superColumn);
-        batch_mutate(shopping_id, "shopping_cart", mutations, TRANSACTIONAL_CONSISTENCY_LEVEL);
-        operations.add("CONFIRMED: "+SC_TOTAL);
-        }catch (Exception e){
+
+            SuperColumn s_column = new SuperColumn("cart_info".getBytes(), column_insert);
+
+            ColumnOrSuperColumn superColumn = new ColumnOrSuperColumn();
+            superColumn.setSuper_column(s_column);
+            List<ColumnOrSuperColumn> mutations = new ArrayList<ColumnOrSuperColumn>();
+            mutations.add(superColumn);
+            batch_mutate(shopping_id, "shopping_cart", mutations, TRANSACTIONAL_CONSISTENCY_LEVEL);
+            operations.add("CONFIRMED: " + SC_TOTAL);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
 
-    public void BuyComfirm(String customer, String cart) {
+    public void BuyComfirm(String customer, String cart) throws Exception {
 
         List<String> columns_to_retreive = new ArrayList<String>();
         columns_to_retreive.add("SCL_QTY");
@@ -2092,13 +1944,13 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         String shipping = ship_types[random.nextInt(ship_types.length)];
 
         float total = 0;
-        try{
+        try {
             total = (Float) shoppingCart.get("cart_info").get("SC_TOTAL");
-        }catch (Exception e){
-           System.out.println("Null pointer on cart:"+cart);
-           System.out.println("OPERATIONS: "+operations.toString()); 
-           e.printStackTrace();
-           return;
+        } catch (Exception e) {
+            System.out.println("Null pointer on cart:" + cart);
+            System.out.println("OPERATIONS: " + operations.toString());
+            e.printStackTrace();
+            return;
         }
 
         String order_id = enterOrder(customer, thread_id, shoppingCart, ship_addr_id, cust_addr, shipping, total, c_discount);
@@ -2114,7 +1966,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
     }
 
 
-    public String enterOrder(String customer_id, int thread_id, Map<String, Map<String, Object>> shoppingCart, String ship_addr_id, String cust_addr, String shipping, float total, double c_discount) {
+    public String enterOrder(String customer_id, int thread_id, Map<String, Map<String, Object>> shoppingCart, String ship_addr_id, String cust_addr, String shipping, float total, double c_discount) throws Exception {
 
 
         String key = (String) keyGenerator.getNextKey(thread_id);
@@ -2149,9 +2001,11 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
                 index++;
 
                 int item_i = Integer.parseInt(item);
-                Object o = readfromColumn(item, "item", "I_STOCK", TRANSACTIONAL_CONSISTENCY_LEVEL);
-                if(o==null){
-                    System.out.println("NULL ITEM:"+item);
+                Object o = null;
+                o = readfromColumn(item, "item", "I_STOCK", TRANSACTIONAL_CONSISTENCY_LEVEL);
+
+                if (o == null) {
+                    System.out.println("NULL ITEM:" + item);
 
                 }
                 int stock = (Integer) o;
@@ -2166,7 +2020,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 
     public void enterCCXact(String order_id, String customer, String cc_type, long cc_number,
-                            String cc_name, Date cc_expiry, float total, String ship_addr_id) {
+                            String cc_name, Date cc_expiry, float total, String ship_addr_id) throws Exception {
 
         int co_id = (Integer) readfromColumn(ship_addr_id, "address", "ADDR_CO_ID", READ_CONSISTENCY_LEVEL);
         CCXact ccxact = new CCXact(cc_type, cc_number, cc_name, cc_expiry, total, cc_expiry, order_id, co_id);
@@ -2179,7 +2033,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
     }
 
 
-    public void OrderInquiry(String customer) {       //1h
+    public void OrderInquiry(String customer) throws Exception {       //1h
 
 //        long t1 = System.currentTimeMillis();
 
@@ -2255,7 +2109,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         }
     }
 
-    public void doSearch(String term, String field) {   //30
+    public void doSearch(String term, String field) throws Exception {   //30
 
 
         if (term.equalsIgnoreCase("SUBJECT")) {
@@ -2336,11 +2190,11 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
         }
     }
 
-    public void newProducts(String field) {   //1h
+    public void newProducts(String field) throws Exception {   //1h
         Map<String, Map<String, Object>> columns = getAllColumnsMapFromSuperCFLimit("item_subject_index", field, 50, READ_CONSISTENCY_LEVEL);
     }
 
-    public void BestSellers(String field) {
+    public void BestSellers(String field) throws Exception {
 
 
         Map<String, Map<String, Map<String, Object>>> orders = super_rangeQuery("orders", null, 3333);
@@ -2413,7 +2267,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
     }
 
-    public void ItemInfo(int id) {
+    public void ItemInfo(int id) throws Exception {
 
         List<String> columns_to_retrieve_item = new ArrayList<String>();
         columns_to_retrieve_item.add("I_TITLE");
@@ -2444,7 +2298,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
     }
 
-    public void AdminChange(int item_id) {
+    public void AdminChange(int item_id) throws Exception {
 
 
         List<String> columns_to_retrieve_item = new ArrayList<String>();
@@ -2561,7 +2415,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
     }
 
 
-    public void updateIndex(String subject, Date date, int item_id, String title, int author_key) {
+    public void updateIndex(String subject, Date date, int item_id, String title, int author_key) throws Exception {
 
         List<String> columns_to_retrieve_author = new ArrayList<String>();
         columns_to_retrieve_author.add("A_FNAME");

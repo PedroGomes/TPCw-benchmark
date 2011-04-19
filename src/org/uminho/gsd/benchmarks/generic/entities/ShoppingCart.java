@@ -22,71 +22,49 @@
  * and open the template in the editor.
  */
 
-package org.uminho.gsd.benchmarks.TPCW_Generic.entities;
-
+package org.uminho.gsd.benchmarks.generic.entities;
 
 import org.uminho.gsd.benchmarks.interfaces.Entity;
 
+import java.sql.Timestamp;
 import java.util.TreeMap;
 
+public class ShoppingCart implements Entity {
 
-public class Country implements Entity {
+    int i_id;
 
-    String name;
-    String currency;
-    double exchange;
-    int co_id;
+    //Not used
+    int SC_C_ID; //Unique identifier of the Shopping Session
+    Timestamp SC_DATE;//The date and time when the CART was last updated
+    float SC_SUB_TOTAL; //The gross total amount of all items in the CART
+    float SC_TAX; //The tax based on the gross total amount
+    float SC_SHIP_COST; //The total shipping and handling charges
+    float SC_TOTAL; //The total amount of the order
+    String SC_C_FNAME; //C_FNAME of the Customer
+    String SC_C_LNAME; //C_LNAME of the Customer
+    float SC_C_DISCOUNT; //C_DISCOUNT of the Customer
 
-    public Country(int co_id, String name, String currency, double exchange) {
-        this.name = name;
-        this.currency = currency;
-        this.exchange = exchange;
-        this.co_id = co_id;
+
+    public ShoppingCart(int i_id) {
+        this.i_id = i_id;
     }
 
-
-    public String getCo_id() {
-        return name;
+    public int getI_id() {
+        return i_id;
     }
 
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
-    public double getExchange() {
-        return exchange;
-    }
-
-    public void setExchange(double exchange) {
-        this.exchange = exchange;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public void setI_id(int i_id) {
+        this.i_id = i_id;
     }
 
     public TreeMap<String, Object> getValuesToInsert() {
         TreeMap<String, Object> values = new TreeMap<String, Object>();
-
-        values.put("CO_NAME", name);
-        values.put("CO_CURRENCY", currency);
-        values.put("CO_EXCHANGE", exchange);
-
-
         return values;
     }
 
     public String getKeyName() {
-        return "CO_ID";
+        return "SC_ID";
     }
+
 
 }

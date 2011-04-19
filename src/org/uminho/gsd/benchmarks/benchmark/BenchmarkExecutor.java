@@ -81,7 +81,7 @@ public class BenchmarkExecutor {
     }
 
 
-    public void prepare() {
+    public void prepare() throws Exception {
         workloadInterface.init();
     }
 
@@ -129,7 +129,7 @@ public class BenchmarkExecutor {
         return databaseInterface;
     }
 
-    public void consolidate() {
+    public void consolidate() throws Exception {
         BenchmarkSlave.terminated = true;
         workloadInterface.consolidate();
     }

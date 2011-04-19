@@ -41,7 +41,7 @@ public class BenchmarkSlave {
         this.executor = executor;
     }
 
-    public void run() {
+    public void run() throws Exception {
         try {
             ServerSocket ss = new ServerSocket(port);
             System.out.println("[INFO:] Slave waiting");

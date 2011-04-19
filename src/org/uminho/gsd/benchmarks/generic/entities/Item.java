@@ -21,7 +21,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.uminho.gsd.benchmarks.TPCW_Generic.entities;
+package org.uminho.gsd.benchmarks.generic.entities;
 
 
 import org.uminho.gsd.benchmarks.interfaces.Entity;

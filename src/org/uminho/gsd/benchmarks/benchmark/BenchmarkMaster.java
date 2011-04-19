@@ -33,33 +33,45 @@ import java.util.concurrent.CountDownLatch;
 public class BenchmarkMaster {
 
     private int PersonalClientID;
-    Map<String, String> slaves;
+    Map<String, Object> slaves;
     BenchmarkExecutor executor;
     ArrayList<SlaveHandler> slaveHandlers;
     CountDownLatch countBarrier;
 
-    public BenchmarkMaster(BenchmarkExecutor executor, Map<String, String> slaves) {
+    public BenchmarkMaster(BenchmarkExecutor executor, Map<String, Object> slaves) {
         this.executor = executor;
         this.slaves = slaves;
     }
 
-    public void run() {
+    public void run() throws Exception {
 
         slaveHandlers = new ArrayList<SlaveHandler>();
         PersonalClientID = 1;
         countBarrier = new CountDownLatch(slaves.size());
 
+        final Exception[] error = new Exception[1];
+        error[0] = null;
+
         Runnable run = new Runnable() {
             public void run() {
-                executor.prepare();
+                try {
+                    executor.prepare();
+                } catch (Exception e) {
+                    error[0] = e;
+                }
             }
         };
+
         Thread prepare_thread = new Thread(run);
         prepare_thread.start();
 
+        //Time to the clients to be ready
+        Thread.sleep(500);
+
+
         int clientId = 2;
         for (String host : slaves.keySet()) {
-            SlaveHandler sh = new SlaveHandler(clientId, host, slaves.get(host));
+            SlaveHandler sh = new SlaveHandler(clientId, host, (String) slaves.get(host));
             slaveHandlers.add(sh);
             Thread t = new Thread(sh);
             t.start();
@@ -72,6 +84,12 @@ public class BenchmarkMaster {
         } catch (InterruptedException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
+        if(error[0]!=null){
+            throw error[0];
+        }
+
+
+
         System.out.println("[INFO:] STARTING SLAVES");
         for (SlaveHandler sh : slaveHandlers) {
             sh.sendMessage("START\n");

@@ -22,6 +22,7 @@ package org.uminho.gsd.benchmarks.probabilityDistributions;
 
 import cern.jet.random.Distributions;
 import org.apache.log4j.Logger;
+import org.uminho.gsd.benchmarks.benchmark.BenchmarkMain;
 import org.uminho.gsd.benchmarks.interfaces.ProbabilityDistribution;
 
 import java.util.Map;
@@ -48,7 +49,6 @@ public class PowerLawDistribution implements ProbabilityDistribution {
      */
     Map<String, String> info;
 
-
     /**
      * Distribution alpha factor
      */
@@ -73,6 +73,11 @@ public class PowerLawDistribution implements ProbabilityDistribution {
     public Map<String, String> getInfo() {
         if (info == null)
             return new TreeMap<String, String>();
+
+        if(BenchmarkMain.distribution_factor!=-1){
+           info.put("skew",this.alpha+"");
+        }
+
         return info;
     }
 
@@ -80,6 +85,12 @@ public class PowerLawDistribution implements ProbabilityDistribution {
         generator = cern.jet.random.AbstractDistribution.makeDefaultGenerator();
         this.size = numberElements;
         alpha = default_alpha;
+
+        if(BenchmarkMain.distribution_factor!=-1){
+            logger.warn("Power law factor set to user defined level: " +BenchmarkMain.distribution_factor);
+            alpha = BenchmarkMain.distribution_factor;
+            return;
+        }
 
         if (info == null || !info.containsKey("alpha")) {
             System.out.println("[WARN:] ALPHA OPTION IS NOT DEFINED IN USED POWER LAW DISTRIBUTION. DEFAULT: 2");

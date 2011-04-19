@@ -17,11 +17,12 @@
  * ********************************************************************
  */
 
-package org.uminho.gsd.benchmarks.TPCW_Generic.workloads;
+package org.uminho.gsd.benchmarks.generic.workloads;
 
 
-import org.uminho.gsd.benchmarks.TPCW_Generic.entities.Results;
+import org.uminho.gsd.benchmarks.generic.entities.Results;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkExecutor;
+import org.uminho.gsd.benchmarks.benchmark.BenchmarkMain;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkSlave;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.ProgressBar;
@@ -191,7 +192,7 @@ public class ConsistencyTestWorkloadFactory extends AbstractWorkloadGeneratorFac
 
 
     @Override
-    public void init() {
+    public void init() throws Exception {
 
         items = new TreeMap<String, Integer>();
         items_ids = new ArrayList<String>();
@@ -248,6 +249,8 @@ public class ConsistencyTestWorkloadFactory extends AbstractWorkloadGeneratorFac
         info.put("Database Executor",databaseFactory.getClass().getName());
         info.put("Database engine conf:",databaseClient.getInfo().toString());
         info.put("----","----");
+        String think_time  =(BenchmarkMain.thinkTime == -1) ? "tpcw think time" : "user set: "+BenchmarkMain.thinkTime ;
+        info.put("Think time", think_time);
         info.put("Client num",executor.num_clients+"");
         info.put("Operation num",executor.num_operations+"");
         info.put("Distribution",distribution.getName());
@@ -286,6 +289,8 @@ public class ConsistencyTestWorkloadFactory extends AbstractWorkloadGeneratorFac
         int bought_carts = 0;
         int zeros = 0;
 
+
+
         for (ResultHandler client : collected_results) {
             globalResultHandler.addResults(client);
 
@@ -307,6 +312,9 @@ public class ConsistencyTestWorkloadFactory extends AbstractWorkloadGeneratorFac
                 }
             }
         }
+
+     //   System.out.println("Collected results sizes:" +BoughtItems.size());
+
         try {
             Thread.sleep(1500);
         } catch (InterruptedException e) {
@@ -323,16 +331,26 @@ public class ConsistencyTestWorkloadFactory extends AbstractWorkloadGeneratorFac
 
         if (nodeID.isMaster()) {
 
+       //     System.out.println("ITEM IDS SIZE: " + items_ids.size());
+
             for (String item : items_ids) {
                 int bought = BoughtItems.containsKey(item) ? BoughtItems.get(item) : 0;
                 Results result = new Results(bought, items.get(item), nodeID.getId() + "");
-                database_client.insert(item, "results", result);
+                try {
+                    database_client.insert(item, "results", result);
+                } catch (Exception e) {
+                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                }
             }
         } else {
             for (String item : items_ids) {
                 int bought = BoughtItems.containsKey(item) ? BoughtItems.get(item) : 0;
                 Results result = new Results(bought, 0, nodeID.getId() + "");
-                database_client.insert(item, "results", result);
+                try {
+                    database_client.insert(item, "results", result);
+                } catch (Exception e) {
+                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                }
             }
         }
 
@@ -341,7 +359,7 @@ public class ConsistencyTestWorkloadFactory extends AbstractWorkloadGeneratorFac
     }
 
     @Override
-    public void consolidate() {
+    public void consolidate() throws Exception {
 
         System.out.println("[INFO:] ANALYZING RESULTS");
 
@@ -370,7 +388,7 @@ public class ConsistencyTestWorkloadFactory extends AbstractWorkloadGeneratorFac
                 //for each client
                 // System.out.println("Clients:" + result_info.keySet().size());
                 Map<String, Map<String, Object>> item_info = result_info.get(clientID);
-                //  System.out.println("Items:" + item_info.keySet().size());
+         //       System.out.println("[INFO:] Items result size:" + item_info.keySet().size());
                 for (String itemID : item_info.keySet()) {
                     Map<String, Object> item_data = item_info.get(itemID);
                     if (!items_FinalInfo.containsKey(itemID)) {
@@ -422,6 +440,9 @@ public class ConsistencyTestWorkloadFactory extends AbstractWorkloadGeneratorFac
             dataHeader.add("out_of_stock");
 
             int index = 0;
+
+      //      System.out.println("[INFO: ] Final item info collection size: "+items_FinalInfo.keySet().size());
+
             for (String it : items_FinalInfo.keySet()) {
 
                 int[] item_d = items_FinalInfo.get(it);

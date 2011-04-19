@@ -17,7 +17,7 @@
  * ********************************************************************
  */
 
-package org.uminho.gsd.benchmarks.TPCW_Generic.helpers;
+package org.uminho.gsd.benchmarks.generic.helpers;
 
 import org.uminho.gsd.benchmarks.interfaces.KeyGenerator;
 

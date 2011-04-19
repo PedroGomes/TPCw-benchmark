@@ -58,13 +58,16 @@ public class Item implements Entity {
 
     @PrimaryKey
     int i_id;
+   // @Index
     String I_TITLE;
     @Persistent
     Date pubDate;
+   // @Index
     @Persistent(defaultFetchGroup = "true")
     Author I_AUTHOR;
     String I_PUBLISHER;
     String I_DESC;
+   // @Index
     String I_SUBJECT;
     String thumbnail;
     String image;

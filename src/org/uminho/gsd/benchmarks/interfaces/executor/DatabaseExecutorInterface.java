@@ -37,6 +37,8 @@ import java.util.Map;
 public interface DatabaseExecutorInterface {
 
 
+
+
     /**
      * Start the benchmark process within the client.<br>
      * This operation should always be sequential, relying in the Executor class that handles the thread clients <br>
@@ -54,29 +56,29 @@ public interface DatabaseExecutorInterface {
      *
      * @param op operation to be executed, and where the result is stored.
      */
-    public void execute(Operation op) throws NoSuchFieldException;
+    public void execute(Operation op) throws Exception;
 
 
-    public Object insert(String key, String path, Entity value);
+    public Object insert(String key, String path, Entity value) throws Exception;
 
 
-    public void remove(String key, String path, String column);
+    public void remove(String key, String path, String column) throws Exception;
 
 
-    public void update(String key, String path, String column, Object value, String superfield);
+    public void update(String key, String path, String column, Object value, String superfield) throws Exception;
 
 
-    public Object read(String key, String path, String column, String superfield);
+    public Object read(String key, String path, String column, String superfield) throws Exception;
 
 
-    public Map<String, Map<String, Object>> rangeQuery(String table, List<String> fields, int limit);
+    public Map<String, Map<String, Object>> rangeQuery(String table, List<String> fields, int limit) throws Exception;
 
 
-    public void truncate(String path);
+    public void truncate(String path) throws Exception;
 
-    public void index(String key,String path, Object value);
+    public void index(String key,String path, Object value) throws Exception;
 
-    public void index(String key,String path, String indexed_key ,Map<String,Object> value);
+    public void index(String key,String path, String indexed_key ,Map<String,Object> value) throws Exception;
     
 
     public void closeClient();

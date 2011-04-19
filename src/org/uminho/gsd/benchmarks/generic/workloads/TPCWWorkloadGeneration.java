@@ -17,11 +17,11 @@
  * ********************************************************************
  */
 
-package org.uminho.gsd.benchmarks.TPCW_Generic.workloads;
+package org.uminho.gsd.benchmarks.generic.workloads;
 
 
 import org.apache.log4j.Logger;
-import org.uminho.gsd.benchmarks.TPCW_Generic.populator.Constants;
+import org.uminho.gsd.benchmarks.generic.populator.Constants;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkNodeID;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.ProgressBar;
@@ -92,6 +92,9 @@ public class TPCWWorkloadGeneration implements WorkloadGeneratorInterface {
 
         this.resultHandler = handler;
         this.item_titles = items;
+
+        Constants.NUM_ITEMS  = items.size();
+
         this.author_names = authors;
         this.workload_values = new TreeMap<String, Double>();
 

@@ -19,6 +19,7 @@
 
 package org.uminho.gsd.benchmarks.probabilityDistributions;
 
+import org.uminho.gsd.benchmarks.benchmark.BenchmarkMain;
 import org.uminho.gsd.benchmarks.interfaces.ProbabilityDistribution;
 
 import java.io.*;
@@ -59,12 +60,22 @@ public class ZipfDistribution implements ProbabilityDistribution {
         if(info==null)
             return new TreeMap<String, String>();
 
+        if(BenchmarkMain.distribution_factor!=-1){
+           info.put("skew",this.skew+"");
+        }
+
         return info;
     }
 
     public void init(int numberElements, Map<String, Object> options) {
         this.size = numberElements;
         this.skew = 0.5;
+
+        if(BenchmarkMain.distribution_factor!=-1){
+            System.out.println("Power law factor set to user defined level: " +BenchmarkMain.distribution_factor);
+            skew = BenchmarkMain.distribution_factor;
+            return;
+        }
 
         if (info == null || !info.containsKey("skew")) {
             System.out.println("[WARN:] SKEW OPTION IS NOT DEFINED IN USED ZIPF DISTRIBUTION. DEFAULT: 0.5");

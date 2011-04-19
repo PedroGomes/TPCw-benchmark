@@ -17,7 +17,7 @@
  * ********************************************************************
  */
 
-package org.uminho.gsd.benchmarks.TPCW_Generic.workloads;
+package org.uminho.gsd.benchmarks.generic.workloads;
 
 
 import org.uminho.gsd.benchmarks.helpers.ProgressBar;
@@ -29,7 +29,6 @@ import java.util.*;
 
 
 public class ConsistencyWorkloadGenerator implements WorkloadGeneratorInterface {
-
 
     //The items and their stock in the database
     private List<String> items;
@@ -150,6 +149,7 @@ public class ConsistencyWorkloadGenerator implements WorkloadGeneratorInterface 
                 watching_item = true;
             }
         }
+
         return op;
     }
 }

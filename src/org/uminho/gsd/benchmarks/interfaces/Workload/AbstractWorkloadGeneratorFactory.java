@@ -110,7 +110,7 @@ public abstract class AbstractWorkloadGeneratorFactory {
             }
         }
 
-        Map<String, Map<String, String>> map = JsonUtil.getMapMapFromJsonString(jsonString_r);
+        Map<String, Map<String, String>> map = JsonUtil.getStringMapMapFromJsonString(jsonString_r);
 
         //the percentage in each the operation should be executed.
         if (map.containsKey("Workload")) {
@@ -131,7 +131,7 @@ public abstract class AbstractWorkloadGeneratorFactory {
      * This operation is synchronized between the master and slaves, and
      * should contain operations that prepare the future clients to start from a specif point
      */
-    public abstract void init();
+    public abstract void init() throws Exception;
 
 
     /**
@@ -148,7 +148,7 @@ public abstract class AbstractWorkloadGeneratorFactory {
      * This method is invoked after all clients finish and it is intended to allow the user to execute operations over
      * collected data.
      */
-    public abstract void consolidate();
+    public abstract void consolidate() throws Exception;
 
     /**
      * Method called after all clients have finished

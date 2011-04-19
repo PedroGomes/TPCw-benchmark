@@ -22,57 +22,71 @@
  * and open the template in the editor.
  */
 
-package org.uminho.gsd.benchmarks.TPCW_Generic.entities;
+package org.uminho.gsd.benchmarks.generic.entities;
 
 
 import org.uminho.gsd.benchmarks.interfaces.Entity;
 
 import java.util.TreeMap;
 
-/**
- * OL_ID
- * OL_O_ID
- * OL_I_ID
- * OL_QTY
- * OL_DISCOUNT
- * OL_COMMENT
- */
-public class OrderLine implements Entity {
 
-    int OL_ID;
-    int OL_O_ID;
-    int OL_I_ID;
-    int OL_QTY;
-    double OL_DISCOUNT;
-    String OL_COMMENT;
+public class Country implements Entity {
+
+    String name;
+    String currency;
+    double exchange;
+    int co_id;
+
+    public Country(int co_id, String name, String currency, double exchange) {
+        this.name = name;
+        this.currency = currency;
+        this.exchange = exchange;
+        this.co_id = co_id;
+    }
 
 
-    public OrderLine(int OL_ID, int OL_O_ID, int OL_I_ID, int OL_QTY, double OL_DISCOUNT, String OL_COMMENT) {
-        this.OL_ID = OL_ID;
-        this.OL_O_ID = OL_O_ID;
-        this.OL_I_ID = OL_I_ID;
-        this.OL_QTY = OL_QTY;
-        this.OL_DISCOUNT = OL_DISCOUNT;
-        this.OL_COMMENT = OL_COMMENT;
+    public String getCo_id() {
+        return name;
+    }
+
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+
+    public double getExchange() {
+        return exchange;
+    }
+
+    public void setExchange(double exchange) {
+        this.exchange = exchange;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public TreeMap<String, Object> getValuesToInsert() {
-
         TreeMap<String, Object> values = new TreeMap<String, Object>();
 
-        values.put("OL_O_ID", OL_O_ID);
-        values.put("OL_I_ID", OL_I_ID);
-        values.put("OL_QTY", OL_QTY);
-        values.put("OL_DISCOUNT", OL_DISCOUNT);
-        values.put("OL_COMMENTS", OL_COMMENT);
+        values.put("CO_NAME", name);
+        values.put("CO_CURRENCY", currency);
+        values.put("CO_EXCHANGE", exchange);
+
 
         return values;
-
     }
 
     public String getKeyName() {
-        return "OL_ID";
+        return "CO_ID";
     }
-
 
 }

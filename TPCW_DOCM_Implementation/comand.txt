@@ -1,4 +1,4 @@
-java -classpath .:out/production/BenchmarkingSuite:out/production:out/production/TPCW_DOCM_Implementation/:libs/datanucleus/datanucleus-enhancer-2.0.2.jar:libs/datanucleus/jdo2-api.jar:libs/datanucleus/datanucleus-core-2.1.0-m2.jar:libs/log4j-1.2.13.jar:libs/datanucleus/asm-3.1.jar -Dlog4j.configuration=file:log4j.properties org.datanucleus.enhancer.DataNucleusEnhancer out/production/TPCW_DOCM_Implementation/org/uminho/gsd/benchmarks/TPCW_CassandraOM/entities/*.class
+java -classpath .:out/production/BenchmarkingSuite:out/production:out/production/TPCW_DOCM_Implementation/:libs/datanucleus-enhancer-2.0.2.jar:libs/jdo2-api.jar:libs/datanucleus-core-2.1.0-m2.jar:libs/log4j-1.2.13.jar:libs/asm-3.1.jar -Dlog4j.configuration=file:log4j.properties org.datanucleus.enhancer.DataNucleusEnhancer out/production/TPCW_DOCM_Implementation/org/uminho/gsd/benchmarks/TPCW_CassandraOM/entities/*.class
 
 
 -> The classpath must include any abstract or interface class when they are used by the enhanced classes. 

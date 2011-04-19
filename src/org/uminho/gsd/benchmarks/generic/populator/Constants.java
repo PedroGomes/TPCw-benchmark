@@ -17,13 +17,19 @@
  * ********************************************************************
  */
 
-package org.uminho.gsd.benchmarks.TPCW_Generic;
+package org.uminho.gsd.benchmarks.generic.populator;
 
-public enum BuyingResult {
-    BOUGHT, //Product bought
-    NOT_AVAILABLE, //not available, the product has no stock, so you cant buy it
-    OUT_OF_STOCK, //bought product, but there is no stock to deliver the product
-    DOES_NOT_EXIST, //debug result, the item does not exist
-    CANT_COMFIRM  //debug result, when we can't see the item stock after being bought
+
+public class Constants {
+
+    public static /* final */ int NUM_EBS = 10;
+    public static /* final */ int NUM_ITEMS = 1000;
+    public static /* final */ int NUM_CUSTOMERS = NUM_EBS * 2880;
+    public static /* final */ int NUM_ADDRESSES = 2 * NUM_CUSTOMERS;
+    public static /* final */ int NUM_AUTHORS = (int) (.25 * NUM_ITEMS);
+    public static /* final */ int NUM_ORDERS = (int) (.9 * NUM_CUSTOMERS);
+    public static /* final */ int NUM_COUNTRIES = 92; // this is constant. Never changes!
+
+
 
 }

@@ -150,7 +150,7 @@ public class ProgressBar {
                 }
             }
         };
-        Thread t = new Thread(run);
+        Thread t = new Thread(run,"Progress Bar");
         t.start();
     }
 

@@ -24,6 +24,7 @@ import org.uminho.gsd.benchmarks.TPCW_CassandraOM.entities.*;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkNodeID;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.BenchmarkUtil;
+import org.uminho.gsd.benchmarks.helpers.ThinkTime;
 import org.uminho.gsd.benchmarks.interfaces.Entity;
 import org.uminho.gsd.benchmarks.interfaces.KeyGenerator;
 import org.uminho.gsd.benchmarks.interfaces.Workload.Operation;
@@ -68,7 +69,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
     /**
      * Think time*
      */
-    private int simulatedDelay;
+    private long simulatedDelay;
 
     int debug = 0;
 
@@ -79,20 +80,29 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     KeyGenerator keyGenerator;
 
-    PersistenceManagerFactory pmf;
+    private static PersistenceManagerFactory pmf;
 
     Random random;
 
+    static {
+//        System.out.println("PersistenceManager initialized");
+        pmf = JDOHelper.getPersistenceManagerFactory("datanucleus.properties");
+       // pmf = JDOHelper.getPersistenceManagerFactory("Test");
+
+
+    }
+
+
     public TPCWCassandraDataNucleusExecutor(KeyGenerator keyGenerator) {
 
-
-        pmf = JDOHelper.getPersistenceManagerFactory("datanucleus.properties");
         this.keyGenerator = keyGenerator;
         random = new Random();
+    //    pmf = JDOHelper.getPersistenceManagerFactory("Test");
     }
 
     public void start(WorkloadGeneratorInterface workload, BenchmarkNodeID nodeId, int operation_number, ResultHandler handler) {
         client_result_handler = handler;
+
 
         for (int operation = 0; operation < operation_number; operation++) {
             try {
@@ -102,12 +112,17 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
                 execute(op);
                 long end_time = System.currentTimeMillis();
 
-                simulatedDelay = (int) ((-Math.log(random.nextDouble()) * 7) * 1000d);
-                if (simulatedDelay > 70000) {
-                    simulatedDelay = 70000;
+                if(end_time-init_time>10000){
+                    System.out.println("OP: "+op.getOperation()+ "over 10000");
                 }
 
-                Thread.sleep(simulatedDelay);
+                simulatedDelay = ThinkTime.getThinkTime();
+
+                if (simulatedDelay > 0) {
+                    Thread.sleep(simulatedDelay);
+                } else{
+                    System.out.println("Warn: 0 or negative thinking time" );
+                }
 
 
                 client_result_handler.logResult(op.getOperation(), (end_time - init_time));
@@ -117,6 +132,8 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
                 System.out.println("[ERROR:] THINK TIME AFTER METHOD EXECUTION INTERRUPTED: " + e.getMessage());
             } catch (Exception e) {
                 e.printStackTrace();
+                System.out.println("Execution client going out....");
+                break;
             }
         }
 
@@ -127,7 +144,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     }
 
-    public void execute(Operation op) throws NoSuchFieldException {
+    public void execute(Operation op) throws Exception {
         if (op == null) {
             System.out.println("[ERROR]: NULL OPERATION");
             return;
@@ -229,7 +246,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
     }
 
 
-    public synchronized Object insert(String key, String path, Entity value) {
+    public synchronized Object insert(String key, String path, Entity value) throws Exception {
 
 
         PersistenceManager pm = pmf.getPersistenceManager();
@@ -239,12 +256,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             pm.makePersistent(value);
             tx.commit();
 
-        }
-
-        catch (Exception ec) {
-            ec.printStackTrace();
-        }
-        finally {
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -254,11 +266,11 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         return null;
     }
 
-    public void remove(String key, String path, String column) {
+    public void remove(String key, String path, String column) throws Exception {
         //To change body of implemented methods use File | Settings | File Templates.
     }
 
-    public void update(String key, String path, String column, Object value, String superfield) {
+    public void update(String key, String path, String column, Object value, String superfield) throws Exception {
         PersistenceManager pm = pmf.getPersistenceManager();
         Transaction tx = pm.currentTransaction();
 
@@ -275,8 +287,8 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
         } catch (Exception e) {
             System.out.println("[ERROR]: ERROR IN STOCK CRAWLER ITERATION");
-        }
-        finally {
+            throw e;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -286,7 +298,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     }
 
-    public Object read(String key, String path, String column, String superfield) {
+    public Object read(String key, String path, String column, String superfield) throws Exception {
         PersistenceManager pm = pmf.getPersistenceManager();
         Transaction tx = pm.currentTransaction();
 
@@ -303,8 +315,8 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
         } catch (Exception e) {
             System.out.println("[ERROR]: ERROR IN STOCK CRAWLER ITERATION");
-        }
-        finally {
+            throw e;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -319,7 +331,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     }
 
-    public Map<String, Map<String, Object>> rangeQuery(String table, List<String> fields, int limit) {
+    public Map<String, Map<String, Object>> rangeQuery(String table, List<String> fields, int limit) throws Exception {
         PersistenceManager pm = pmf.getPersistenceManager();
         Transaction tx = pm.currentTransaction();
         Collection<Object> items = null;
@@ -340,12 +352,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             items = (Collection) q.execute();
 
             tx.commit();
-        }
-
-        catch (Exception ec) {
-            ec.printStackTrace();
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -389,7 +398,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         return info;
     }
 
-    public void truncate(String path) {
+    public void truncate(String path) throws Exception {
 
 
         path = "org.uminho.gsd.benchmarks.TPCW_CassandraOM.entities." + path;
@@ -402,12 +411,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             System.out.println("Deleted " + numberInstancesDeleted + " " + path);
 
             tx.commit();
-        }
-
-        catch (Exception ec) {
-            ec.printStackTrace();
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -415,11 +421,11 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         }
     }
 
-    public void index(String key, String path, Object value) {
+    public void index(String key, String path, Object value) throws Exception {
         //not used
     }
 
-    public void index(String key, String path, String indexed_key, Map<String, Object> value) {
+    public void index(String key, String path, String indexed_key, Map<String, Object> value) throws Exception {
         //not used
     }
 
@@ -435,10 +441,12 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     /******************************************/
     /****  TPCW extra benchmark operations  **/
-    /****************************************/
+    /**
+     * ************************************
+     */
 
 
-    public long getItemStock(String item_id) {
+    public long getItemStock(String item_id) throws Exception {
         PersistenceManager pm = pmf.getPersistenceManager();
         Transaction tx = pm.currentTransaction();
         long stock = -1;
@@ -449,8 +457,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             stock = item.getI_STOCK();
             tx.commit();
 
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -459,7 +468,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         return stock;
     }
 
-    public Map<String, Map<String, Object>> getItemStock_andProduct() {
+    public Map<String, Map<String, Object>> getItemStock_andProduct() throws Exception {
         PersistenceManager pm = pmf.getPersistenceManager();
         Transaction tx = pm.currentTransaction();
         Collection<Item> items = null;
@@ -471,12 +480,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             items = (Collection) q.execute();
 
             tx.commit();
-        }
-
-        catch (Exception ec) {
-            ec.printStackTrace();
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -518,10 +524,12 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     /****************************/
     /****  TPCW operations  ****/
-    /**************************/
+    /**
+     * **********************
+     */
 
 
-    public void HomeOperation(String costumer, int item) {
+    public void HomeOperation(String costumer, int item) throws Exception {
 
 
         PersistenceManager pm = pmf.getPersistenceManager();
@@ -550,8 +558,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
             tx.commit();
 
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -560,7 +569,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     }
 
-    public void shoppingCartInteraction(int item, boolean create, String SHOPPING_ID) {
+    public void shoppingCartInteraction(int item, boolean create, String SHOPPING_ID) throws Exception {
 
 
         if (create) {
@@ -578,8 +587,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
                 tx.commit();
 
-            }
-            finally {
+            } catch (Exception ec) {
+                throw ec;
+            } finally {
                 if (tx.isActive()) {
                     tx.rollback();
                 }
@@ -635,8 +645,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             Object attachedCart = pm.makePersistent(cart_aux);
             tx.commit();
 
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -646,7 +657,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     }
 
-    public void registerCostumer(String id) {
+    public void registerCostumer(String id) throws Exception {
 
         Customer c = generateCustomer(id);
 
@@ -664,8 +675,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             pm.makePersistent(c);
             tx.commit();
 
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -798,7 +810,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         return address;
     }
 
-    public void refreshSession(String C_ID) {
+    public void refreshSession(String C_ID) throws Exception {
 
 
         PersistenceManager pm = pmf.getPersistenceManager();
@@ -818,8 +830,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
             tx.commit();
 
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -829,7 +842,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     }
 
-    public void BuyRequest(String shopping_id) {
+    public void BuyRequest(String shopping_id) throws Exception {
         PersistenceManager pm = pmf.getPersistenceManager();
         Transaction tx = pm.currentTransaction();
 
@@ -863,8 +876,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
             tx.commit();
 
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -874,7 +888,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     }
 
-    public void BuyComfirm(String costumer_id, String cart_id) {
+    public void BuyComfirm(String costumer_id, String cart_id) throws Exception {
         PersistenceManager pm = pmf.getPersistenceManager();
         Transaction tx = pm.currentTransaction();
 
@@ -954,8 +968,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
             tx.commit();
 
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -963,7 +978,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         }
     }
 
-    public void OrderInquiry(String customer) {   //10/15
+    public void OrderInquiry(String customer) throws Exception {   //10/15
 
         PersistenceManager pm = pmf.getPersistenceManager();
         Transaction tx = pm.currentTransaction();
@@ -977,6 +992,8 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             Extent e = pm.getExtent(Order.class, true);
             Query q = pm.newQuery(e, "O_C_ID == \"" + customer + "\"");
             q.setRange("0,1");
+     //       q.setOrdering("O_ID ascending");
+
             Collection c = (Collection) q.execute();
             Iterator iter = c.iterator();
             while (iter.hasNext()) {
@@ -1002,8 +1019,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
             }
             tx.commit();
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -1012,7 +1030,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     }
 
-    public void doSearch(String term, String field) {   //30
+    public void doSearch(String term, String field) throws Exception {   //30
         PersistenceManager pm = pmf.getPersistenceManager();
         Transaction tx = pm.currentTransaction();
 
@@ -1050,6 +1068,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
                 Extent e = pm.getExtent(Author.class, true);
                 Query q = pm.newQuery(e, "A_LNAME == \"" + field + "\"");
                 q.setRange("0,1");
+      //          q.setOrdering("a_id ascending");
                 Object res = q.execute();
                 if (res == null)
                     return;
@@ -1121,8 +1140,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             }
 
             tx.commit();
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -1130,7 +1150,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         }
     }
 
-    private void newProducts(String field) {
+    private void newProducts(String field) throws Exception {
 
         PersistenceManager pm = pmf.getPersistenceManager();
         Transaction tx = pm.currentTransaction();
@@ -1168,8 +1188,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
 
             tx.commit();
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -1177,20 +1198,24 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         }
     }
 
-    public void BestSellers(String field) { //30
+    public void BestSellers(String field) throws Exception { //30
         PersistenceManager pm = pmf.getPersistenceManager();
         Transaction tx = pm.currentTransaction();
 
         try {
             tx.begin();
+
             Extent e = pm.getExtent(Order.class, true);
             Query q = pm.newQuery(e, null);
             q.setRange(0, 3333);
+ //           q.setOrdering("");
             Object res = q.execute();
+
             if (res == null)
                 return;
 
-            Collection<Order> orders = (Collection) q.execute();
+            Collection<Order> orders = (Collection) res;
+
             Map<Integer, Integer> items = new TreeMap<Integer, Integer>();
             Map<Integer, Author> item_author = new TreeMap<Integer, Author>();
 
@@ -1226,8 +1251,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             }
 
             tx.commit();
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -1236,7 +1262,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     }
 
-    public void ItemInfo(int id) {
+    public void ItemInfo(int id) throws Exception {
 
         PersistenceManager pm = pmf.getPersistenceManager();
         Transaction tx = pm.currentTransaction();
@@ -1246,8 +1272,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             Item item = pm.getObjectById(Item.class, id);
             String name = item.getI_AUTHOR().getA_LNAME();
             tx.commit();
-        }
-        finally {
+        } catch (Exception ec) {
+            throw ec;
+        } finally {
             if (tx.isActive()) {
                 tx.rollback();
             }
@@ -1255,7 +1282,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         }
     }
 
-    public void AdminChange(int item_id) {
+    public void AdminChange(int item_id) throws Exception {
 
 
         PersistenceManager pm = pmf.getPersistenceManager();
@@ -1278,13 +1305,15 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             Extent e = pm.getExtent(Order.class, true);
             Query q = pm.newQuery(e, null);
             q.setRange(0, 10000);
+ //           q.setOrdering("");
+
             Object res = q.execute();
             if (res == null) {
                 System.out.println("NULL");
                 return;
             }
 
-            Collection<Order> orders = (Collection) q.execute();
+            Collection<Order> orders = (Collection) res;
 
             Map<Integer, Integer> items = new TreeMap<Integer, Integer>();
 
@@ -1343,9 +1372,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             item.setI_RELATED5(best.get(4));
 
             tx.commit();
-        }
-
-        finally
+        } catch (Exception ec) {
+            throw ec;
+        } finally
 
         {
             if (tx.isActive()) {

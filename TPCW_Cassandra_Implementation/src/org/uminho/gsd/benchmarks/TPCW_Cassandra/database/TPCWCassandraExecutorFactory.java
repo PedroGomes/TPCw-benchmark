@@ -21,8 +21,9 @@ package org.uminho.gsd.benchmarks.TPCW_Cassandra.database;
 
 
 import org.apache.cassandra.thrift.ConsistencyLevel;
-import org.uminho.gsd.benchmarks.TPCW_Generic.helpers.NodeKeyGenerator;
+import org.uminho.gsd.benchmarks.generic.helpers.NodeKeyGenerator;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkExecutor;
+import org.uminho.gsd.benchmarks.helpers.ThinkTime;
 import org.uminho.gsd.benchmarks.interfaces.executor.AbstractDatabaseExecutorFactory;
 import org.uminho.gsd.benchmarks.interfaces.executor.DatabaseExecutorInterface;
 
@@ -146,6 +147,7 @@ public class TPCWCassandraExecutorFactory extends AbstractDatabaseExecutorFactor
             for (String host : CI.keySet()) {
                 int port = Integer.parseInt(CI.get(host).trim());
                 connections.put(host, port);
+                System.out.println("Cassandra native database client registered: "+host + ":" +port);
             }
         }
         if (connections.isEmpty()) {
@@ -162,17 +164,9 @@ public class TPCWCassandraExecutorFactory extends AbstractDatabaseExecutorFactor
 
         if (!conf.containsKey("Configuration")) {
             System.out.println("[ERROR:] NO CONFIGURATION FOUND: THINK TIME -> 50 ms, RETRIEVED SLICES -> 1000 rows");
-            simulatedDelay = 50;
             search_slice_ratio = 1000;
         } else {
             Map<String, String> CI = conf.get("Configuration");
-            if (CI.containsKey("thinkTime")) {
-                simulatedDelay = Integer.parseInt(CI.get("thinkTime"));
-            } else {
-
-                System.out.println("[ERROR:] NO CONFIGURATION FOUND: THINK TIME -> 50 ms");
-                simulatedDelay = 50;
-            }
 
             if (CI.containsKey("retrievedRowSlices")) {
                 search_slice_ratio = Integer.parseInt(CI.get("retrievedRowSlices"));
@@ -186,6 +180,9 @@ public class TPCWCassandraExecutorFactory extends AbstractDatabaseExecutorFactor
             System.out.println("ERROR: NO CONNECTION INFO FOUND DEFAULTS ASSUMED: [HOST=localhost, PORT=9160] ");
             connections.put("localhost", 9160);
         }
+
+        System.out.println("Think Time Sample: "+ ThinkTime.getThinkTime()+","+ThinkTime.getThinkTime());
+
     }
 
 
@@ -196,7 +193,7 @@ public class TPCWCassandraExecutorFactory extends AbstractDatabaseExecutorFactor
             keyGenerator = new NodeKeyGenerator(this.nodeID.getId());
         }
 
-        return new TPCWCassandraExecutor(Keyspace, connections, consistencyLevel, key_associations, simulatedDelay, search_slice_ratio, keyGenerator);
+        return new org.uminho.gsd.benchmarks.TPCW_Cassandra.database.TPCWCassandraExecutor(Keyspace, connections, consistencyLevel, key_associations, simulatedDelay, search_slice_ratio, keyGenerator);
 
     }
 }

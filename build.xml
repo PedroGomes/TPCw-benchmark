@@ -15,6 +15,8 @@
   <property name="compiler.args" value=""/>
   <property name="compiler.max.memory" value="128m"/>
   <property name="lib.home" value="libs" />
+  <property name="conf.home" value="conf" /> 
+
   <patternset id="ignored.files">
     <exclude name="**/CVS/**"/>
     <exclude name="**/SCCS/**"/>
@@ -146,92 +148,7 @@
     <delete dir="${benchmarkingsuite.output.dir}"/>
     <delete dir="${benchmarkingsuite.testoutput.dir}"/>
   </target>
-  
-  
-  <!-- Module TPCW_Generic_Implementation -->
-  
-  <dirname property="module.tpcw_generic_implementation.basedir" file="${ant.file}"/>
-  
-  
-  
-  <property name="compiler.args.tpcw_generic_implementation" value="${compiler.args}"/>
-  
-  <property name="tpcw_generic_implementation.output.dir" value="${module.tpcw_generic_implementation.basedir}/out/production/TPCW_Generic_Implementation"/>
-  <property name="tpcw_generic_implementation.testoutput.dir" value="${module.tpcw_generic_implementation.basedir}/out/test/TPCW_Generic_Implementation"/>
-  
-  <path id="tpcw_generic_implementation.module.bootclasspath">
-    <!-- Paths to be included in compilation bootclasspath -->
-  </path>
-  
-  <path id="tpcw_generic_implementation.module.production.classpath">
-    <pathelement location="${benchmarkingsuite.output.dir}"/>
-    <pathelement location="${basedir}/libs/log4j-1.2.13.jar"/>
-  </path>
-  
-  <path id="tpcw_generic_implementation.runtime.production.module.classpath">
-    <pathelement location="${tpcw_generic_implementation.output.dir}"/>
-    <path refid="benchmarkingsuite.runtime.production.module.classpath"/>
-    <pathelement location="${basedir}/libs/log4j-1.2.13.jar"/>
-  </path>
-  
-  <path id="tpcw_generic_implementation.module.classpath">
-    <pathelement location="${tpcw_generic_implementation.output.dir}"/>
-    <pathelement location="${benchmarkingsuite.testoutput.dir}"/>
-    <pathelement location="${benchmarkingsuite.output.dir}"/>
-    <pathelement location="${basedir}/libs/log4j-1.2.13.jar"/>
-  </path>
-  
-  <path id="tpcw_generic_implementation.runtime.module.classpath">
-    <pathelement location="${tpcw_generic_implementation.testoutput.dir}"/>
-    <pathelement location="${tpcw_generic_implementation.output.dir}"/>
-    <path refid="benchmarkingsuite.runtime.module.classpath"/>
-    <pathelement location="${basedir}/libs/log4j-1.2.13.jar"/>
-  </path>
-  
-  
-  <patternset id="excluded.from.module.tpcw_generic_implementation">
-    <patternset refid="ignored.files"/>
-  </patternset>
-  
-  <patternset id="excluded.from.compilation.tpcw_generic_implementation">
-    <patternset refid="excluded.from.module.tpcw_generic_implementation"/>
-  </patternset>
-  
-  <path id="tpcw_generic_implementation.module.sourcepath">
-    <dirset dir="${module.tpcw_generic_implementation.basedir}/TPCW_Generic_Implementation">
-      <include name="src"/>
-    </dirset>
-  </path>
-  
-  
-  <target name="compile.module.tpcw_generic_implementation" depends="compile.module.tpcw_generic_implementation.production,compile.module.tpcw_generic_implementation.tests" description="Compile module TPCW_Generic_Implementation"/>
-  
-  <target name="compile.module.tpcw_generic_implementation.production" depends="compile.module.benchmarkingsuite" description="Compile module TPCW_Generic_Implementation; production classes">
-    <mkdir dir="${tpcw_generic_implementation.output.dir}"/>
-    <javac destdir="${tpcw_generic_implementation.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
-      <compilerarg line="${compiler.args.tpcw_generic_implementation}"/>
-      <bootclasspath refid="tpcw_generic_implementation.module.bootclasspath"/>
-      <classpath refid="tpcw_generic_implementation.module.production.classpath"/>
-      <src refid="tpcw_generic_implementation.module.sourcepath"/>
-      <patternset refid="excluded.from.compilation.tpcw_generic_implementation"/>
-    </javac>
     
-    <copy todir="${tpcw_generic_implementation.output.dir}">
-      <fileset dir="${module.tpcw_generic_implementation.basedir}/TPCW_Generic_Implementation/src">
-        <patternset refid="compiler.resources"/>
-        <type type="file"/>
-      </fileset>
-    </copy>
-  </target>
-  
-  <target name="compile.module.tpcw_generic_implementation.tests" depends="compile.module.tpcw_generic_implementation.production" description="compile module TPCW_Generic_Implementation; test classes" unless="skip.tests"/>
-  
-  <target name="clean.module.tpcw_generic_implementation" description="cleanup module">
-    <delete dir="${tpcw_generic_implementation.output.dir}"/>
-    <delete dir="${tpcw_generic_implementation.testoutput.dir}"/>
-  </target>
-  
-  
   <!-- Module TPCW_Cassandra_Implementation -->
   
   <dirname property="module.tpcw_cassandra_implementation.basedir" file="${ant.file}"/>
@@ -249,7 +166,6 @@
   
   <path id="tpcw_cassandra_implementation.module.production.classpath">
     <pathelement location="${benchmarkingsuite.output.dir}"/>
-    <pathelement location="${tpcw_generic_implementation.output.dir}"/>
     <pathelement location="${basedir}/conf/DataStore"/>
     <pathelement location="${basedir}/libs/libthrift-r917130.jar"/>
     <pathelement location="${basedir}/libs/apache-cassandra-0.6.1.jar"/>
@@ -260,7 +176,6 @@
   <path id="tpcw_cassandra_implementation.runtime.production.module.classpath">
     <pathelement location="${tpcw_cassandra_implementation.output.dir}"/>
     <path refid="benchmarkingsuite.runtime.production.module.classpath"/>
-    <path refid="tpcw_generic_implementation.runtime.production.module.classpath"/>
     <pathelement location="${basedir}/conf/DataStore"/>
     <pathelement location="${basedir}/libs/libthrift-r917130.jar"/>
     <pathelement location="${basedir}/libs/apache-cassandra-0.6.1.jar"/>
@@ -272,8 +187,6 @@
     <pathelement location="${tpcw_cassandra_implementation.output.dir}"/>
     <pathelement location="${benchmarkingsuite.testoutput.dir}"/>
     <pathelement location="${benchmarkingsuite.output.dir}"/>
-    <pathelement location="${tpcw_generic_implementation.testoutput.dir}"/>
-    <pathelement location="${tpcw_generic_implementation.output.dir}"/>
     <pathelement location="${basedir}/conf/DataStore"/>
     <pathelement location="${basedir}/libs/libthrift-r917130.jar"/>
     <pathelement location="${basedir}/libs/apache-cassandra-0.6.1.jar"/>
@@ -285,7 +198,6 @@
     <pathelement location="${tpcw_cassandra_implementation.testoutput.dir}"/>
     <pathelement location="${tpcw_cassandra_implementation.output.dir}"/>
     <path refid="benchmarkingsuite.runtime.module.classpath"/>
-    <path refid="tpcw_generic_implementation.runtime.module.classpath"/>
     <pathelement location="${basedir}/conf/DataStore"/>
     <pathelement location="${basedir}/libs/libthrift-r917130.jar"/>
     <pathelement location="${basedir}/libs/apache-cassandra-0.6.1.jar"/>
@@ -311,7 +223,7 @@
   
   <target name="compile.module.tpcw_cassandra_implementation" depends="compile.module.tpcw_cassandra_implementation.production,compile.module.tpcw_cassandra_implementation.tests" description="Compile module TPCW_Cassandra_Implementation"/>
   
-  <target name="compile.module.tpcw_cassandra_implementation.production" depends="compile.module.benchmarkingsuite,compile.module.tpcw_generic_implementation" description="Compile module TPCW_Cassandra_Implementation; production classes">
+  <target name="compile.module.tpcw_cassandra_implementation.production" depends="compile.module.benchmarkingsuite" description="Compile module TPCW_Cassandra_Implementation; production classes">
     <mkdir dir="${tpcw_cassandra_implementation.output.dir}"/>
     <javac destdir="${tpcw_cassandra_implementation.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
       <compilerarg line="${compiler.args.tpcw_cassandra_implementation}"/>
@@ -352,7 +264,6 @@
   
   <path id="tpcw_docm_implementation.module.production.classpath">
     <pathelement location="${benchmarkingsuite.output.dir}"/>
-    <pathelement location="${tpcw_generic_implementation.output.dir}"/>
     <pathelement location="${basedir}/conf/DataStore"/>
     <pathelement location="${basedir}/libs/jdo2-api.jar"/>
     <pathelement location="${basedir}/libs/datanucleus-enhancer-2.0.2.jar"/>
@@ -364,7 +275,6 @@
   <path id="tpcw_docm_implementation.runtime.production.module.classpath">
     <pathelement location="${tpcw_docm_implementation.output.dir}"/>
     <path refid="benchmarkingsuite.runtime.production.module.classpath"/>
-    <path refid="tpcw_generic_implementation.runtime.production.module.classpath"/>
     <pathelement location="${basedir}/conf/DataStore"/>
     <pathelement location="${basedir}/libs/jdo2-api.jar"/>
     <pathelement location="${basedir}/libs/datanucleus-enhancer-2.0.2.jar"/>
@@ -377,8 +287,6 @@
     <pathelement location="${tpcw_docm_implementation.output.dir}"/>
     <pathelement location="${benchmarkingsuite.testoutput.dir}"/>
     <pathelement location="${benchmarkingsuite.output.dir}"/>
-    <pathelement location="${tpcw_generic_implementation.testoutput.dir}"/>
-    <pathelement location="${tpcw_generic_implementation.output.dir}"/>
     <pathelement location="${basedir}/conf/DataStore"/>
     <pathelement location="${basedir}/libs/jdo2-api.jar"/>
     <pathelement location="${basedir}/libs/datanucleus-enhancer-2.0.2.jar"/>
@@ -391,7 +299,6 @@
     <pathelement location="${tpcw_docm_implementation.testoutput.dir}"/>
     <pathelement location="${tpcw_docm_implementation.output.dir}"/>
     <path refid="benchmarkingsuite.runtime.module.classpath"/>
-    <path refid="tpcw_generic_implementation.runtime.module.classpath"/>
     <pathelement location="${basedir}/conf/DataStore"/>
     <pathelement location="${basedir}/libs/jdo2-api.jar"/>
     <pathelement location="${basedir}/libs/datanucleus-enhancer-2.0.2.jar"/>
@@ -422,7 +329,7 @@
   
   <target name="compile.module.tpcw_docm_implementation" depends="compile.module.tpcw_docm_implementation.production,compile.module.tpcw_docm_implementation.tests" description="Compile module TPCW_DOCM_Implementation"/>
   
-  <target name="compile.module.tpcw_docm_implementation.production" depends="compile.module.benchmarkingsuite,compile.module.tpcw_generic_implementation" description="Compile module TPCW_DOCM_Implementation; production classes">
+  <target name="compile.module.tpcw_docm_implementation.production" depends="compile.module.benchmarkingsuite" description="Compile module TPCW_DOCM_Implementation; production classes">
     <mkdir dir="${tpcw_docm_implementation.output.dir}"/>
     <javac destdir="${tpcw_docm_implementation.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
       <compilerarg line="${compiler.args.tpcw_docm_implementation}"/>
@@ -485,7 +392,6 @@
   
   <path id="tpcw_mysql_implementation.module.production.classpath">
     <pathelement location="${benchmarkingsuite.output.dir}"/>
-    <pathelement location="${tpcw_generic_implementation.output.dir}"/>
     <pathelement location="${basedir}/libs/log4j-1.2.13.jar"/>
     <pathelement location="${basedir}/libs/mysql-connector-java-5.1.12-bin.jar"/>
   </path>
@@ -493,7 +399,6 @@
   <path id="tpcw_mysql_implementation.runtime.production.module.classpath">
     <pathelement location="${tpcw_mysql_implementation.output.dir}"/>
     <path refid="benchmarkingsuite.runtime.production.module.classpath"/>
-    <path refid="tpcw_generic_implementation.runtime.production.module.classpath"/>
     <pathelement location="${basedir}/libs/log4j-1.2.13.jar"/>
     <pathelement location="${basedir}/libs/mysql-connector-java-5.1.12-bin.jar"/>
   </path>
@@ -502,8 +407,6 @@
     <pathelement location="${tpcw_mysql_implementation.output.dir}"/>
     <pathelement location="${benchmarkingsuite.testoutput.dir}"/>
     <pathelement location="${benchmarkingsuite.output.dir}"/>
-    <pathelement location="${tpcw_generic_implementation.testoutput.dir}"/>
-    <pathelement location="${tpcw_generic_implementation.output.dir}"/>
     <pathelement location="${basedir}/libs/log4j-1.2.13.jar"/>
     <pathelement location="${basedir}/libs/mysql-connector-java-5.1.12-bin.jar"/>
   </path>
@@ -512,7 +415,6 @@
     <pathelement location="${tpcw_mysql_implementation.testoutput.dir}"/>
     <pathelement location="${tpcw_mysql_implementation.output.dir}"/>
     <path refid="benchmarkingsuite.runtime.module.classpath"/>
-    <path refid="tpcw_generic_implementation.runtime.module.classpath"/>
     <pathelement location="${basedir}/libs/log4j-1.2.13.jar"/>
     <pathelement location="${basedir}/libs/mysql-connector-java-5.1.12-bin.jar"/>
   </path>
@@ -535,7 +437,7 @@
   
   <target name="compile.module.tpcw_mysql_implementation" depends="compile.module.tpcw_mysql_implementation.production,compile.module.tpcw_mysql_implementation.tests" description="Compile module TPCW_MySQL_Implementation"/>
   
-  <target name="compile.module.tpcw_mysql_implementation.production" depends="compile.module.benchmarkingsuite,compile.module.tpcw_generic_implementation" description="Compile module TPCW_MySQL_Implementation; production classes">
+  <target name="compile.module.tpcw_mysql_implementation.production" depends="compile.module.benchmarkingsuite" description="Compile module TPCW_MySQL_Implementation; production classes">
     <mkdir dir="${tpcw_mysql_implementation.output.dir}"/>
     <javac destdir="${tpcw_mysql_implementation.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
       <compilerarg line="${compiler.args.tpcw_mysql_implementation}"/>
@@ -564,9 +466,9 @@
     <!-- Perform any build initialization in this target -->
   </target>
   
-  <target name="clean" depends="clean.module.benchmarkingsuite, clean.module.tpcw_generic_implementation, clean.module.tpcw_cassandra_implementation, clean.module.tpcw_docm_implementation, clean.module.tpcw_mysql_implementation" description="cleanup all"/>
+  <target name="clean" depends="clean.module.benchmarkingsuite, clean.module.tpcw_cassandra_implementation, clean.module.tpcw_docm_implementation, clean.module.tpcw_mysql_implementation" description="cleanup all"/>
   
-  <target name="build.modules" depends="init, clean, compile.module.benchmarkingsuite, compile.module.tpcw_generic_implementation, compile.module.tpcw_cassandra_implementation, compile.module.tpcw_docm_implementation, compile.module.tpcw_mysql_implementation" description="build all modules"/>
+  <target name="build.modules" depends="init, clean, compile.module.benchmarkingsuite, compile.module.tpcw_cassandra_implementation, compile.module.tpcw_docm_implementation, compile.module.tpcw_mysql_implementation" description="build all modules"/>
   
   <target name="init.artifacts">
     <property name="artifacts.temp.dir" value="${basedir}/__artifacts_temp"/>
@@ -604,9 +506,11 @@
 
   
   
-  <target name="artifact.tpcw_benchmark" depends="init.artifacts, compile.module.benchmarkingsuite, compile.module.tpcw_cassandra_implementation, compile.module.tpcw_docm_implementation, compile.module.tpcw_generic_implementation, compile.module.tpcw_mysql_implementation" description="Build &apos;tpcw_benchmark&apos; artifact">
+  <target name="artifact.tpcw_benchmark" depends="init.artifacts, compile.module.benchmarkingsuite, compile.module.tpcw_cassandra_implementation, compile.module.tpcw_docm_implementation, compile.module.tpcw_mysql_implementation" description="Build &apos;tpcw_benchmark&apos; artifact">
     <property name="artifact.temp.output.tpcw_benchmark" value="${artifacts.temp.dir}/tpcw_benchmark"/>
-
+    <property name="artifact.output.run" value="${basedir}/run"/>
+    <property name="artifact.output.run.lib" value="${artifact.output.run}/libs"/>
+    <property name="artifact.output.run.conf" value="${artifact.output.run}/conf"/>
     <mkdir dir="${artifact.temp.output.tpcw_benchmark}"/>
 
 
@@ -622,7 +526,6 @@
       <zipfileset dir="${benchmarkingsuite.output.dir}"/>
       <zipfileset dir="${tpcw_cassandra_implementation.output.dir}"/>
       <zipfileset dir="${tpcw_docm_implementation.output.dir}"/>
-      <zipfileset dir="${tpcw_generic_implementation.output.dir}"/>
       <zipfileset dir="${tpcw_mysql_implementation.output.dir}"/> 
       
     </jar>
@@ -634,6 +537,25 @@
     <copy todir="${artifact.output.tpcw_benchmark}">
       <fileset dir="${artifact.temp.output.tpcw_benchmark}"/>
     </copy>
+    
+    <delete dir="${artifact.output.run}"/>  
+    
+     <!-- copy creation jar to run directory-->
+    <mkdir dir="${artifact.output.run}"/>
+    <copy todir="${artifact.output.run}">
+      <fileset dir="${artifact.temp.output.tpcw_benchmark}"/>
+    </copy>
+    
+    <!-- copy conf files to run directory-->
+    <copy todir="${artifact.output.run.conf}">
+      <fileset dir="${conf.home}"/>
+    </copy>
+    
+     <!-- copy jar files to run directory-->
+    <copy todir="${artifact.output.run.lib}">
+      <fileset dir="${lib.home}"/>
+    </copy>
+
     
     <!-- Delete temporary files -->
     <delete dir="${artifacts.temp.dir}"/>

@@ -54,6 +54,7 @@ public class Order implements Entity {
 
     @PrimaryKey
     String O_ID;
+    //@Index
     @Persistent
     Customer O_C_ID;
     @Persistent    

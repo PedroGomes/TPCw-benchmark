@@ -40,6 +40,7 @@ import java.util.TreeMap;
 public class Author implements Entity {
 
     String fname;
+   // @Index
     String A_LNAME;
     String mname;
     @Persistent

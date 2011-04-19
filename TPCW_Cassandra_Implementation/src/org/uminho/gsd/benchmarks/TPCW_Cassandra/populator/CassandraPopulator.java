@@ -24,9 +24,16 @@
 package org.uminho.gsd.benchmarks.TPCW_Cassandra.populator;
 
 import org.uminho.gsd.benchmarks.TPCW_Cassandra.database.TPCWCassandraExecutor;
-import org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.*;
-import org.uminho.gsd.benchmarks.TPCW_Generic.helpers.NodeKeyGenerator;
-import org.uminho.gsd.benchmarks.TPCW_Generic.populator.Constants;
+import org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.Address;
+import org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.Author;
+import org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.CCXact;
+import org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.Country;
+import org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.Customer;
+import org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.Item;
+import org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.Order;
+import org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.OrderLine;
+import org.uminho.gsd.benchmarks.generic.helpers.NodeKeyGenerator;
+import org.uminho.gsd.benchmarks.generic.populator.Constants;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.BenchmarkUtil;
 import org.uminho.gsd.benchmarks.interfaces.Entity;
@@ -77,6 +84,8 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
     private static int num_threads = 1;
     boolean error = false;
     private CountDownLatch barrier;
+
+    private static boolean client_error = false;
 
     public CassandraPopulator(AbstractDatabaseExecutorFactory database_interface_factory, String conf_filename) {
         super(database_interface_factory, conf_filename);
@@ -160,31 +169,43 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
 
     public boolean populate() {
 
+        delay_time = 10000;
         if (error) {
             return false;
         } else {
             try {
                 insertCountries(NUM_COUNTRIES);
+                if (client_error) return false;
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
                 insertAddresses(NUM_ADDRESSES, true);
+                if (client_error) return false;
+
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
                 insertCustomers(NUM_CUSTOMERS);
+                if (client_error) return false;
+
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
                 insertAuthors(NUM_AUTHORS, true);
+                if (client_error) return false;
+
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
                 insertItems(NUM_ITEMS);
+                if (client_error) return false;
+
                 if (delay_inserts) {
                     Thread.sleep(delay_time);
                 }
                 insertOrder_and_CC_XACTS(NUM_ORDERS);
+                if (client_error) return false;
+
 
                 System.out.println("***Finished***");
 
@@ -208,11 +229,11 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
         }
     }
 
-    public void cleanDB() {
+    public void cleanDB() throws Exception {
         removeALL();
     }
 
-    public void BenchmarkClean() {
+    public void BenchmarkClean() throws Exception {
         DatabaseExecutorInterface client = databaseClientFactory.getDatabaseClient();
         client.truncate("Orders");
         client.truncate("CC_XACTS");
@@ -235,7 +256,7 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
 
     }
 
-    public void removeALL() {
+    public void removeALL() throws Exception {
 
         DatabaseExecutorInterface client = databaseClientFactory.getDatabaseClient();
         client.truncate("Customer");
@@ -255,7 +276,7 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
         client.closeClient();
     }
 
-    public void databaseInsert(DatabaseExecutorInterface client, String Operation, String key, String path, Entity value, ResultHandler results) {
+    public void databaseInsert(DatabaseExecutorInterface client, String Operation, String key, String path, Entity value, ResultHandler results) throws Exception {
 
         long time1 = System.currentTimeMillis();
         client.insert(key, path, value);
@@ -347,7 +368,7 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
             this.insertAuthors(num_authors);
         }
 
-        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
+        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) throws Exception {
 
             long time1 = System.currentTimeMillis();
             client.insert(key, path, value);
@@ -380,7 +401,13 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
 
                 Author a = new Author(base + i, first_name, last_name, middle_name, dob, bio);
                 if (insertDB)
-                    databaseInsert("INSERT_Authors", (base + i) + "", "author", a, partial_results);
+                    try {
+                        databaseInsert("INSERT_Authors", (base + i) + "", "author", a, partial_results);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        client_error = true;
+                        break;
+                    }
 
                 partial_authors.add(a);
             }
@@ -560,7 +587,14 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
 
                 Customer c = new Customer(base + i + "", key, pass, last_name, first_name, phone + "", email, C_SINCE, C_LAST_LOGIN, C_LOGIN, C_EXPIRATION, C_BALANCE, C_YTD_PMT, C_BIRTHDATE, C_DATA, discount, address_id);
 
-                databaseInsert("INSERT_Customers", (base + i) + "", "customer", c, partial_results);
+                try {
+                    databaseInsert("INSERT_Customers", (base + i) + "", "customer", c, partial_results);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    client_error = true;
+                    break;
+
+                }
 
                 partial_Customers.add(base + i + "");
 
@@ -582,7 +616,7 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
         }
 
 
-        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
+        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) throws Exception {
 
             long time1 = System.currentTimeMillis();
             client.insert(key, path, value);
@@ -773,7 +807,14 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
 
                 Item item = new Item(base + i, I_TITLE, pubDate, I_PUBLISHER, I_DESC, I_SUBJECT, thumbnail, image, I_COST, I_STOCK, isbn, srp, I_RELATED[0], I_RELATED[1], I_RELATED[2], I_RELATED[3], I_RELATED[4], I_PAGE, avail, I_BACKING, dimensions, author);
 
-                databaseInsert("INSERT_Items", (base + i) + "", column_family, item, partial_results);
+                try {
+                    databaseInsert("INSERT_Items", (base + i) + "", column_family, item, partial_results);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    client_error = true;
+                    break;
+
+                }
                 if (build_indexes) {
                     Map<String, Object> index_values = new TreeMap<String, Object>();
                     index_values.put("A_FNAME", I_AUTHOR.getFname());
@@ -783,9 +824,16 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
 
                     long time_stamp = Long.MAX_VALUE - pubDate.getTime();
 
-                    client.index(I_SUBJECT, "item_subject_index", (time_stamp) + "." + (base + i), index_values);
-                    client.index(I_TITLE, "item_title_index", (base + i) + "", index_values);
-                    client.index(I_AUTHOR.getA_LNAME(), "item_author_index", (base + i) + "", index_values);
+                    try {
+                        client.index(I_SUBJECT, "item_subject_index", (time_stamp) + "." + (base + i), index_values);
+                        client.index(I_TITLE, "item_title_index", (base + i) + "", index_values);
+                        client.index(I_AUTHOR.getA_LNAME(), "item_author_index", (base + i) + "", index_values);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        client_error = true;
+                        break;
+
+                    }
                 }
                 partial_items.add(item.getI_id());
             }
@@ -797,7 +845,7 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
             client.closeClient();
         }
 
-        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
+        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) throws Exception {
 
             long time1 = System.currentTimeMillis();
             client.insert(key, path, value);
@@ -894,7 +942,7 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
             this.insertAddress(num_addresses);
         }
 
-        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) {
+        public void databaseInsert(String Operation, String key, String path, Entity value, ResultHandler results) throws Exception {
 
             long time1 = System.currentTimeMillis();
             client.insert(key, path, value);
@@ -934,7 +982,14 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
 //            insert(country.getCo_id(), key, "Addresses", "ADDR_CO_ID", writeConsistency);
 
                 if (insertDB) {
-                    databaseInsert("INSERT_Addresses", key + "", "address", address, partial_results);
+                    try {
+                        databaseInsert("INSERT_Addresses", key + "", "address", address, partial_results);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        client_error = true;
+                        break;
+
+                    }
                 }
                 partial_adresses.add(key);
 
@@ -1027,7 +1082,13 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
             //insert(currencies[i], countriesNames[i], "Countries", "CO_CURRENCY", writeConsitency);
 
             Country country = new Country(i, countriesNames[i], currencies[i], exchanges[i]);
-            databaseInsert(client, "INSERT_Countries", i + "", "country", country, results);
+            try {
+                databaseInsert(client, "INSERT_Countries", i + "", "country", country, results);
+            } catch (Exception e) {
+                e.printStackTrace();
+                client_error = true;
+                break;
+            }
             this.countries.add(i);
         }
         if (debug) {
@@ -1109,7 +1170,7 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
             this.insertOrder_and_CC_XACTS(num_orders);
         }
 
-        public void databaseInsert(Order order, List<OrderLine> orderLines, CCXact ccXact) {
+        public void databaseInsert(Order order, List<OrderLine> orderLines, org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.CCXact ccXact) throws Exception {
             ((TPCWCassandraExecutor) client).insertOrder(order, orderLines, ccXact);
         }
 
@@ -1259,7 +1320,14 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
                 CCXact ccXact = new CCXact(CX_TYPE, CX_NUM, CX_NAME, CX_EXPIRY,/* CX_AUTH_ID,*/ O_TOTAL,
                         O_SHIP_DATE, /* 1 + _counter, */ order_id, country_id);
 
-                databaseInsert(order, orderLines, ccXact);
+                try {
+                    databaseInsert(order, orderLines, ccXact);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    client_error = true;
+                    break;
+
+                }
 
 //                O_ID++;
             }

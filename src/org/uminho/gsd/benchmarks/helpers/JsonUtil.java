@@ -90,7 +90,30 @@ public class JsonUtil {
      * @param str - jackson string
      * @return Map<String, String>
      */
-    public static Map<String, Map<String, String>> getMapMapFromJsonString(String str) {
+    public static Map<String, Map<String, Object>> getMapMapFromJsonString(String str) {
+        try {
+            if (isNotBlank(str)) {
+                Map<String, Map<String, Object>> map = (Map<String, Map<String, Object>>) new ObjectMapper()
+                        .readValue(jf.createJsonParser(new StringReader(str)), Map.class);
+                return map;
+            } else {
+                log.warn("ErrMsg: input string is null ");
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("ErrMsg: " + e.getMessage(), e);
+            return null;
+        }
+    }
+
+
+        /**
+     * Convert JackSon string to Map<String, String>
+     *
+     * @param str - jackson string
+     * @return Map<String, String>
+     */
+    public static Map<String, Map<String, String>> getStringMapMapFromJsonString(String str) {
         try {
             if (isNotBlank(str)) {
                 Map<String, Map<String, String>> map = (Map<String, Map<String, String>>) new ObjectMapper()
@@ -105,7 +128,6 @@ public class JsonUtil {
             return null;
         }
     }
-
 
     /**
      * Convert Map<String, String>[] to JackSon string

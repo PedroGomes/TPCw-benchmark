@@ -102,7 +102,7 @@ public abstract class AbstractDatabaseExecutorFactory {
             }
         }
 
-        Map<String, Map<String, String>> map = JsonUtil.getMapMapFromJsonString(jsonString_r);
+        Map<String, Map<String, String>> map = JsonUtil.getStringMapMapFromJsonString(jsonString_r);
         conf = map;
     }
 

@@ -58,9 +58,9 @@ public abstract class AbstractBenchmarkPopulator {
      */
     public abstract boolean populate();
 
-    public abstract void cleanDB();
+    public abstract void cleanDB() throws Exception;
 
-    public abstract void BenchmarkClean();
+    public abstract void BenchmarkClean() throws Exception;
 
     public void loadFile() {
 
@@ -98,7 +98,7 @@ public abstract class AbstractBenchmarkPopulator {
             }
         }
 
-        Map<String, Map<String, String>> map = JsonUtil.getMapMapFromJsonString(jsonString_r);
+        Map<String, Map<String, String>> map = JsonUtil.getStringMapMapFromJsonString(jsonString_r);
         configuration = map;
     }
 }

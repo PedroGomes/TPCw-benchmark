@@ -42,7 +42,12 @@ public class ResultHandler {
     /**
      * results -> for each operation store the result in(currentTime:result) *
      */
-    private HashMap<String, ArrayList<Pair<Long, Long>>> results;
+    private HashMap<String, ArrayList<Pair<Long, Long>>> time_results;
+
+    /**
+    * results -> for each operation store data as a list of Objects *
+    */
+    private HashMap<String, ArrayList<ArrayList<Object>>> data_results;
 
     //Store information in 2 maps, allowing for example, the storage of several data per event,
     // like the time and place of a racer.
@@ -65,7 +70,7 @@ public class ResultHandler {
         this.test_name = name;
         testsamples = run_data_divisions;
 
-        results = new HashMap<String, ArrayList<Pair<Long, Long>>>();
+        time_results = new HashMap<String, ArrayList<Pair<Long, Long>>>();
 
         events = new HashMap<String, HashMap<String, Long>>();
 
@@ -84,10 +89,10 @@ public class ResultHandler {
     public void logResult(String operation, long result) {
 
         Pair<Long, Long> resultPair = new Pair<Long, Long>(System.currentTimeMillis(), result);
-        if (!results.containsKey(operation)) {
-            results.put(operation, new ArrayList<Pair<Long, Long>>());
+        if (!time_results.containsKey(operation)) {
+            time_results.put(operation, new ArrayList<Pair<Long, Long>>());
         }
-        results.get(operation).add(resultPair);
+        time_results.get(operation).add(resultPair);
     }
 
     public void countEvent(String eventType, String event, long number) {
@@ -161,7 +166,7 @@ public class ResultHandler {
      */
 
     public void cleanResults() {
-        results.clear();
+        time_results.clear();
         data.clear();
         events.clear();
         System.gc();
@@ -175,14 +180,14 @@ public class ResultHandler {
 
     public void addResults(ResultHandler other_results) {
 
-        Map<String, ArrayList<Pair<Long, Long>>> new_results = other_results.results;
+        Map<String, ArrayList<Pair<Long, Long>>> new_results = other_results.time_results;
 
         for (String event_name : new_results.keySet()) {
-            if (!this.results.containsKey(event_name)) {
-                this.results.put(event_name, new_results.get(event_name));
+            if (!this.time_results.containsKey(event_name)) {
+                this.time_results.put(event_name, new_results.get(event_name));
             } else {
                 for (Pair<Long, Long> l : new_results.get(event_name)) {
-                    this.results.get(event_name).add(l);
+                    this.time_results.get(event_name).add(l);
                 }
             }
         }
@@ -216,9 +221,9 @@ public class ResultHandler {
 
         System.out.println("\n\n------- RESULTS FOR: " + test_name + "-------");
         System.out.println("--runs: " + testsamples);
-        for (String dataOperation : results.keySet()) {
+        for (String dataOperation : time_results.keySet()) {
             System.out.println("OPERATION: " + dataOperation);
-            ArrayList<Pair<Long, Long>> result_data = results.get(dataOperation);
+            ArrayList<Pair<Long, Long>> result_data = time_results.get(dataOperation);
             boolean do_multipleruns = testsamples >= 0;
 
 
@@ -340,10 +345,10 @@ public class ResultHandler {
         }
         System.out.println("OUTPUT FOLDER: " + folder.getName());
 
-        for (String dataOperation : results.keySet()) {
+        for (String dataOperation : time_results.keySet()) {
 
 
-            ArrayList<Pair<Long, Long>> result_data = results.get(dataOperation);
+            ArrayList<Pair<Long, Long>> result_data = time_results.get(dataOperation);
 
             if (dataOperation.trim().equals("")) {
 

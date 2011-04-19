@@ -20,7 +20,7 @@
 package org.uminho.gsd.benchmarks.TPCW_CassandraOM.database_executor;
 
 
-import org.uminho.gsd.benchmarks.TPCW_Generic.helpers.NodeKeyGenerator;
+import org.uminho.gsd.benchmarks.generic.helpers.NodeKeyGenerator;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkExecutor;
 import org.uminho.gsd.benchmarks.interfaces.KeyGenerator;
 import org.uminho.gsd.benchmarks.interfaces.executor.AbstractDatabaseExecutorFactory;

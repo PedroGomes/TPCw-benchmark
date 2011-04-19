@@ -44,19 +44,32 @@ This database allows the use of different populating classes, database executing
 
 
 # Use:
-	-cb - Benchmark cleaning, removes the basic tables needed for execution, and can introduce fresh values. (Only functional in MySQL)
-	
-	-c - Full Database cleaning.
 
-	-p - Populates the database.
-	
-	-m - Execute in master mode.
-	
-	-s - Execute in slave mode. 
+------------------------------------------------------        
+                                            
+ -w  <Workload alias>      : a defined workload alias                                                     
+ -d  <Database alias>      : a defined database alias                                                     
+ -t  <Num Threads>         : number of executing threads                                                  
+ -o  <Num Operations>      : number of operations to be executed per thread                              
+ -df <distribution factor> : a distribution factor that influences the power law skew on product selection
+ -tt <time milliseconds>   : override the default TPC-W think time to the defined value         
+          
+------------------------------------------------------      
+                                           
+ -c   : clean the database                                                                                
+ -cb  : special clean (outdated)                                                                   
+ -p   : populate                                                                                         
+ -pop : populate and return (can be used with -c)   
+                                                    
+------------------------------------------------------    
+                                                 
+ -m   : run as master                                                                                
+ -s <port>   : run as slave in the defined port                                                            
 
 # Warnings and needed improvements:
+- Based on TPCW v1.8
+- Cassandra support only for 0.6, but the code is easy to change if needed.  
 - The population process started in a generic form and for that reason the Cassandra populator reads what fields it should use to create super columns; maybe this doesn't make sense anymore.
-- During the execution process, it's a painful process to alter the configuration file every time. More options should be available through the command line (maybe a profile mechanism).
 - Bad use of log4j.
 - One of the main problems in the MySQL benchmark is the client side generation of ids. Avoiding the overhead of transactions (and synchronization mechanism have to be implemented outside the system as it can exist 2 or more benchmark nodes executing at the same time), some of the queries may need changes. 
 - On the same topic a base MySQL implementation is used where so no indexes are created. This makes the Admin confirm operation unusable because of the execution time. Change the query occurrence in the workload to 0 or check the population file to see how to create indexes.

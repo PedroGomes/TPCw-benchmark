@@ -134,4 +134,16 @@ public class Address implements Entity {
     }
 
 
+    @Override
+    public String toString() {
+        return "Address{" +
+                "addr_id='" + addr_id + '\'' +
+                ", street1='" + street1 + '\'' +
+                ", street2='" + street2 + '\'' +
+                ", city='" + city + '\'' +
+                ", state='" + state + '\'' +
+                ", zip='" + zip + '\'' +
+                ", country=" + country +
+                '}';
+    }
 }

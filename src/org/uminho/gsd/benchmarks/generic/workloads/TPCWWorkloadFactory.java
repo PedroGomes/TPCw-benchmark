@@ -17,9 +17,10 @@
  * ********************************************************************
  */
 
-package org.uminho.gsd.benchmarks.TPCW_Generic.workloads;
+package org.uminho.gsd.benchmarks.generic.workloads;
 
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkExecutor;
+import org.uminho.gsd.benchmarks.benchmark.BenchmarkMain;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkSlave;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.ProgressBar;
@@ -179,7 +180,7 @@ public class TPCWWorkloadFactory extends AbstractWorkloadGeneratorFactory {
 
 
     @Override
-    public void init() {
+    public void init() throws Exception {
 
         author_names = new ArrayList<String>();
         item_titles = new ArrayList<String>();
@@ -219,6 +220,8 @@ public class TPCWWorkloadFactory extends AbstractWorkloadGeneratorFactory {
         info.put("Database Executor",databaseFactory.getClass().getName());
         info.put("Database engine conf:",databaseClient.getInfo().toString());
         info.put("----","----");
+        String think_time  =(BenchmarkMain.distribution_factor == -1) ? "tpcw think time" : "user set: "+BenchmarkMain.distribution_factor ;
+        info.put("Think time", think_time);
         info.put("Client num",executor.num_clients+"");
         info.put("Operation num",executor.num_operations+"");
         info.put("Distribution",distribution.getName());
@@ -247,6 +250,7 @@ public class TPCWWorkloadFactory extends AbstractWorkloadGeneratorFactory {
 
     @Override
     public void finishExecution(List<ResultHandler> collected_results) {
+
         int bought_qty = 0;
         int buying_actions = 0;
         int bought_carts = 0;

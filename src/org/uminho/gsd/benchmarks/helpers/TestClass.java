@@ -19,13 +19,23 @@
 
 package org.uminho.gsd.benchmarks.helpers;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+//import org.apache.cassandra.thrift.*;
+//import org.apache.thrift.TException;
+//import org.apache.thrift.transport.TFramedTransport;
+//import org.apache.thrift.transport.TSocket;
+//import org.apache.thrift.transport.TTransport;
+//import org.apache.thrift.transport.TTransportException;
+import org.uminho.gsd.benchmarks.probabilityDistributions.PowerLawDistribution;
+
+import java.io.*;
+import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 
 
@@ -40,13 +50,14 @@ public class TestClass {
     private static int number_keys = 0;
 
     public static final String driverName = "com.mysql.jdbc.Driver";
-//public static final String dbName = "jdbc:mysql://192.168.82.20:3306/TPCW";
-public static final String dbName = "jdbc:mysql://localhost:3306/TPCW";
+    //public static final String dbName = "jdbc:mysql://192.168.82.20:3306/TPCW";
+    public static final String dbName = "jdbc:mysql://localhost:3306/TPCW";
 
     //  static Connection con;
     static CountDownLatch barrier;
     public static int num_it = 20;
     public static int threads = 20;
+
 
     private static Connection getConnection() throws Exception {
         Class.forName(driverName).newInstance();
@@ -56,84 +67,187 @@ public static final String dbName = "jdbc:mysql://localhost:3306/TPCW";
     }
 
 
-    public static String ObjectToString(Object object) {
-
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try {
-            ObjectOutputStream oos = null;
-
-            oos = new ObjectOutputStream(bos);
-
-            oos.writeObject(object);
-            String name = new String(bos.toByteArray());
-            return name;
-        } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
-        return null;
-    }
+//    public static String ObjectToString(Object object) {
+//
+//        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//        try {
+//            ObjectOutputStream oos = null;
+//
+//            oos = new ObjectOutputStream(bos);
+//
+//            oos.writeObject(object);
+//            String name = new String(bos.toByteArray());
+//            return name;
+//        } catch (IOException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+//        return null;
+//    }
 
 
     public static void main(String[] args) {
 
-        barrier = new CountDownLatch(threads);
+//            String host = "192.168.82.20";
+//            int port = 9160;
+//
+//            TTransport transport = new TFramedTransport(new TSocket(host, port));
+//        try {
+//            transport.open();
+//        } catch (TTransportException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+//        TBinaryProtocol tBinaryProtocol = new TBinaryProtocol(transport);
+//
+//            Cassandra.Client client = new Cassandra.Client(tBinaryProtocol);
+//        try {
+//            client.set_keyspace("orm");
+//            KsDef def = client.describe_keyspace("orm");
+//            def.setReplication_factor(3);
+//            def.setCf_defs(new ArrayList<CfDef>());
+//            client.system_update_keyspace(def);
+//        } catch (InvalidRequestException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        } catch (TException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        } catch (NotFoundException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+//
+//        try {
+//            System.out.println(read_from_ColumnFamily(client, "Address", "streetR]zeGmmEP$secj;Riq.Q=street}CgM=GBOVaw-}#EO_yW}RFII|oF.z._oYaOB[MG!;j+sYorg.uminho.gsd.benchmarks.TPCW_CassandraOM.entities.Country@46dab859").toString());
+//        } catch (Exception e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
 
+//        String range = "0,3333";
+//        long toExclNo = 0;
+//         long fromInclNo  =0 ;
+//        if (range != null && !range.equals("")) {
+//			// Range is of the format "from, to"
+//			String[] fromTo = range.split(",");
+//			if (fromTo.length == 2) {
+//
+//                try {
+//					fromInclNo = Long.parseLong(fromTo[0].trim());
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				}
+//
+//				try {
+//                   toExclNo = Long.parseLong(fromTo[1].trim());
+//				} catch (Exception e) {
+//                    e.printStackTrace();
+//
+//				}
+//
+//			} else {
+//				fromTo = range.split("to");
+//				if (fromTo.length != 2) {
+//                    System.out.println("Error");
+//				} else {
+//					String start_key = fromTo[0].trim();
+//					String end_key = fromTo[1].trim();
+//				}
+//			}
+//
+//		}
 
-
-        try {
-            Connection con = getConnection();
-
-//            PreparedStatement statement0 = con.prepareStatement
-//            ("INSERT INTO ITEM(i_id,i_stock) VALUES(10,0); ");
-//            statement0.execute();
+//
+//        barrier = new CountDownLatch(threads);
+//
+//
+//
+//        try {
+//            Connection con = getConnection();
+//
+////            PreparedStatement statement0 = con.prepareStatement
+////            ("INSERT INTO ITEM(i_id,i_stock) VALUES(10,0); ");
+////            statement0.execute();
+////            con.commit();
+//
+////                PreparedStatement statement0 = con.prepareStatement
+////                  ("SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ ");
+////          statement0.execute();
+//
+//            PreparedStatement statement2 = con.prepareStatement
+//                    ("UPDATE ITEM SET i_stock = 0 WHERE i_id = 10");
+//            statement2.execute();
 //            con.commit();
+//
+//
+//
+//        for (int i = 0; i < threads; i++) {
+//
+//            client client = new client(barrier);
+//            Thread t = new Thread(client);
+//            t.start();
+//        }
+//
+//        try {
+//            barrier.await();
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+//
+//            PreparedStatement statement = con.prepareStatement
+//                        ("SELECT i_stock FROM ITEM WHERE i_id = 10");
+//                ResultSet set = statement.executeQuery();
+//
+//                int stock = -1;
+//                while (set.next()) {
+//                    stock = set.getInt("i_stock");
+//                }
+//                if (stock < 0) {
+//                    System.out.println("ERRRRROR -FIM");
+//                }
+//                         con.commit();
+//            System.out.println("END STOCK: "+stock);
+//
+//          } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
-//                PreparedStatement statement0 = con.prepareStatement
-//                  ("SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ ");
-//          statement0.execute();
+//
+//        PowerLawDistribution powerLawDistribution = new PowerLawDistribution(10000, 30);
+//        //       ZipfDistribution zipfDistribution = new PowerLawDistribution(1000,0.000001);
+//
+//
+//        File file = new File("/Users/pedro/Desktop/Resultados/distribution/dist.csv");
+//
+//        FileOutputStream out = null;
+//        BufferedOutputStream stream = null;
+//
+//        try {
+//            out = new FileOutputStream(file);
+//            stream = new BufferedOutputStream(out);
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+//        try {
+//
+//            for (int i = 0; i < 500; i++) {
+//                //           System.out.println(zipfDistribution.getNextElement());
+//               stream.write((powerLawDistribution.getNextElement() + " \n").getBytes());
+//                System.out.println(powerLawDistribution.getNextElement());
+//            }
+//
+////
+//            stream.flush();
+//            stream.close();
+//            out.close();
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
 
-            PreparedStatement statement2 = con.prepareStatement
-                    ("UPDATE ITEM SET i_stock = 0 WHERE i_id = 10");
-            statement2.execute();
-            con.commit();
-
-
-
-        for (int i = 0; i < threads; i++) {
-
-            client client = new client(barrier);
-            Thread t = new Thread(client);
-            t.start();
-        }
-
-        try {
-            barrier.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
-
-            PreparedStatement statement = con.prepareStatement
-                        ("SELECT i_stock FROM ITEM WHERE i_id = 10");
-                ResultSet set = statement.executeQuery();
-
-                int stock = -1;
-                while (set.next()) {
-                    stock = set.getInt("i_stock");
-                }
-                if (stock < 0) {
-                    System.out.println("ERRRRROR -FIM");
-                }
-                         con.commit();
-            System.out.println("END STOCK: "+stock);
-
-          } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
 
 //    public static void main(String[] args) {
 //
+
+
 //        PowerLawDistribution powerLawDistribution = new PowerLawDistribution(1000,0);
 //        for(int i =0;i<1000;i++){
 //            int next  = powerLawDistribution.getNextElement();
@@ -143,16 +257,139 @@ public static final String dbName = "jdbc:mysql://localhost:3306/TPCW";
 //
 //    }
 
+
+//    public static Map<String, Object> read_from_ColumnFamily( Cassandra.Client client, String column_family, Object key) throws Exception {
+//
+//
+//        ColumnParent columnPath = new ColumnParent(column_family);
+//
+//        ByteBuffer key_bytes = ByteBuffer.wrap(getByteRepresentation(key));
+//
+//        SlicePredicate slicePredicate = new SlicePredicate();
+//        slicePredicate.setSlice_range(new SliceRange(ByteBuffer.wrap(getByteRepresentation("")),ByteBuffer.wrap(getByteRepresentation("")),false,100));
+//
+//        List<ColumnOrSuperColumn> columnOrSuperColumns;
+//
+//        columnOrSuperColumns = client.get_slice(key_bytes, columnPath, slicePredicate, ConsistencyLevel.ONE);
+//
+//        Map<String, Object> results = new TreeMap<String, Object>();
+//
+//        for (ColumnOrSuperColumn columnOrSuperColumn : columnOrSuperColumns) {
+//            results.put(new String(columnOrSuperColumn.getColumn().getName()), columnOrSuperColumn.getColumn().getValue());
+//        }
+//
+//        return results;
+//    }
+//         private static Object toObject(byte[] bytes) throws IOException, ClassNotFoundException {
+//        Object object = null;
+//        object = new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(bytes)).readObject();
+//        return object;
+//
+//    }
+
+    private static byte[] getByteRepresentation(Object obj) {
+
+        if (obj instanceof Integer) {
+            int value = (Integer) obj;
+            byte[] bytes = new byte[4];
+
+            bytes[0] = (byte) (value >> 24);
+            bytes[1] = (byte) ((value << 8) >> 24);
+            bytes[2] = (byte) ((value << 16) >> 24);
+            bytes[3] = (byte) ((value << 24) >> 24);
+
+            return bytes;
+        }
+
+        if (obj instanceof String) {
+            return ((String) obj).getBytes();
+        }
+
+        return null;
+    }
+
+      public static void getData(String CF, String key){
+                    String host = "192.168.82.20";
+//            int port = 9160;
+//
+//            TTransport transport = new TFramedTransport(new TSocket(host, port));
+//        try {
+//            transport.open();
+//        } catch (TTransportException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+//        TBinaryProtocol tBinaryProtocol = new TBinaryProtocol(transport);
+//
+//            Cassandra.Client client = new Cassandra.Client(tBinaryProtocol);
+//        try {
+//            client.set_keyspace("orm");
+////            KsDef def = client.describe_keyspace("orm");
+////            def.setReplication_factor(3);
+////            def.setCf_defs(new ArrayList<CfDef>());
+////            client.system_update_keyspace(def);
+//        } catch (InvalidRequestException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        } catch (TException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+////        } catch (NotFoundException e) {
+////            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+//
+//        try {
+//            System.out.println(read_from_ColumnFamily(client,CF , key).toString());
+//        } catch (Exception e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+    }
+
+
+    public static void getAddress(String key){
+                    String host = "192.168.82.20";
+            int port = 9160;
+//
+//            TTransport transport = new TFramedTransport(new TSocket(host, port));
+//        try {
+//            transport.open();
+//        } catch (TTransportException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+//        TBinaryProtocol tBinaryProtocol = new TBinaryProtocol(transport);
+//
+//            Cassandra.Client client = new Cassandra.Client(tBinaryProtocol);
+//        try {
+//            client.set_keyspace("orm");
+////            KsDef def = client.describe_keyspace("orm");
+////            def.setReplication_factor(3);
+////            def.setCf_defs(new ArrayList<CfDef>());
+////            client.system_update_keyspace(def);
+//        } catch (InvalidRequestException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        } catch (TException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+////        } catch (NotFoundException e) {
+////            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+//
+//        try {
+//            System.out.println(read_from_ColumnFamily(client,"Address" , key).toString());
+//        } catch (Exception e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+    }
+
 }
+
+
+
 
 class client implements Runnable {
 
     Connection con;
     CountDownLatch barrier;
 
-        public static final String driverName = "com.mysql.jdbc.Driver";
-        //public static final String dbName = "jdbc:mysql://192.168.82.20:3306/TPCW";
-        public static final String dbName = "jdbc:mysql://localhost:3306/TPCW";
+    public static final String driverName = "com.mysql.jdbc.Driver";
+    //public static final String dbName = "jdbc:mysql://192.168.82.20:3306/TPCW";
+    public static final String dbName = "jdbc:mysql://localhost:3306/TPCW";
 
 
     client(CountDownLatch barrier) {
@@ -181,36 +418,38 @@ class client implements Runnable {
 //                statement0.execute();
 
 
-
                 PreparedStatement statement = con.prepareStatement
-                        ("SELECT i_stock FROM ITEM WHERE i_id = 10");
+                        ("UPDATE ITEM SET i_stock = ((SELECT i_stock FROM ITEM WHERE i_id = 10) +1) WHERE i_id = 10");
 
 
-                ResultSet set = statement.executeQuery();
-
-                int stock = -1;
-                while (set.next()) {
-                    stock = set.getInt("i_stock");
-                }
-                if (stock < 0) {
-                    System.out.println("ERRRRROR");
-                }
-
-
-                PreparedStatement statement2 = con.prepareStatement
-                        ("UPDATE ITEM SET i_stock = " + (stock+1) + " WHERE i_id = 10");
-                statement2.execute();
-
+//                PreparedStatement statement = con.prepareStatement
+//                        ("SELECT i_stock FROM ITEM WHERE i_id = 10");
+//
+//
+//                ResultSet set = statement.executeQuery();
+//
+//                int stock = -1;
+//                while (set.next()) {
+//                    stock = set.getInt("i_stock");
+//                }
+//                if (stock < 0) {
+//                    System.out.println("ERRRRROR");
+//                }
+//
+//
+//                PreparedStatement statement2 = con.prepareStatement
+//                        ("UPDATE ITEM SET i_stock = " + (stock+1) + " WHERE i_id = 10");
+//                statement2.execute();
 
 
 //                       PreparedStatement statement3 = con.prepareStatement
 //                        ("COMMIT ");
 //                statement3.execute();
 
-           //     statement0.close();
+                //     statement0.close();
                 statement.close();
-                statement2.close();
-           //     statement3.close();
+//                statement2.close();
+                //     statement3.close();
                 con.commit();
 
             }
