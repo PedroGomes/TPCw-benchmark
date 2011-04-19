@@ -358,7 +358,7 @@
     
     
     <!-- ehnacing classes before building the jar -->
-    <java  classname="org.datanucleus.enhancer.DataNucleusEnhancer"> 
+    <java  classname="org.datanucleus.enhancer.DataNucleusEnhancer" fork="true"> 
     	<classpath refid="tpcw_docm_implementation.module.classpath"/>
     	<jvmarg value="-Dlog4j.configuration=file:log4j.properties"/>
     	<arg line="${enhancer.args}"/>
