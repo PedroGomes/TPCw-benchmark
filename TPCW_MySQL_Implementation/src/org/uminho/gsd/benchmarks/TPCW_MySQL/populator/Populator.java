@@ -21,7 +21,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.uminho.gsd.benchmarks.generic.populator;
+package org.uminho.gsd.benchmarks.TPCW_MySQL.populator;
 
 
 
@@ -157,6 +157,14 @@ public class Populator extends AbstractBenchmarkPopulator {
 
 
     public boolean populate() {
+        DatabaseExecutorInterface client = databaseClientFactory.getDatabaseClient();
+
+        Map<String, Object> param = new TreeMap<String, Object>();
+        try {
+            client.execute(new Operation("CREATE_TABLES", param));
+        } catch (Exception e) {
+           // Do nothing
+        }
 
         if (error) {
             return false;
@@ -1311,6 +1319,7 @@ public class Populator extends AbstractBenchmarkPopulator {
             return partial_results;
         }
     }
+
 
 
 

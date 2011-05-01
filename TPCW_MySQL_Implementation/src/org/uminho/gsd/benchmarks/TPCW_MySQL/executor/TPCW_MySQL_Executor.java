@@ -21,13 +21,12 @@ package org.uminho.gsd.benchmarks.TPCW_MySQL.executor;
 
 
 import org.apache.log4j.Logger;
+import org.uminho.gsd.benchmarks.benchmark.BenchmarkNodeID;
+import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.generic.BuyingResult;
 import org.uminho.gsd.benchmarks.generic.entities.Address;
 import org.uminho.gsd.benchmarks.generic.entities.Customer;
-import org.uminho.gsd.benchmarks.generic.populator.Constants;
-
-import org.uminho.gsd.benchmarks.benchmark.BenchmarkNodeID;
-import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
+import org.uminho.gsd.benchmarks.TPCW_MySQL.populator.Constants;
 import org.uminho.gsd.benchmarks.helpers.BenchmarkUtil;
 import org.uminho.gsd.benchmarks.helpers.SqlReader;
 import org.uminho.gsd.benchmarks.helpers.ThinkTime;
@@ -108,6 +107,10 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
     private long simulatedDelay;
 
 
+    private String user = "";
+    private String password = "";
+
+
     /**
      * Node id
      */
@@ -161,7 +164,10 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
         write_connections = new ArrayList<Connection>();
         this.read_paths = read_paths;
         this.write_paths = write_paths;
+        this.user = user;
+        this.password = password;
 
+        createDatabase();
 
         TreeMap<String, Connection> connections = new TreeMap<String, Connection>();
 
@@ -261,7 +267,7 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
 
                 simulatedDelay = ThinkTime.getThinkTime();
 
-                if(simulatedDelay>0){
+                if (simulatedDelay > 0) {
                     Thread.sleep(simulatedDelay);
                 }
 
@@ -291,8 +297,10 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
 
         String method_name = op.getOperation();
 
-
-        if (method_name.equalsIgnoreCase("GET_STOCK_AND_PRODUCTS")) {
+        if (method_name.equalsIgnoreCase("CREATE_TABLES")) {
+            createTables();
+            addIndexes();
+        } else if (method_name.equalsIgnoreCase("GET_STOCK_AND_PRODUCTS")) {
             ArrayList<String> fields = new ArrayList<String>();
             fields.add("i_title");
             fields.add("i_stock");
@@ -801,7 +809,7 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
                 //       for (String item : cart.keySet()) {
 
 
-                BuyingResult result = buyItem(item, qty_read,con);
+                BuyingResult result = buyItem(item, qty_read, con);
                 client_result_handler.countEvent("BUYING_COUNTERS", result.name(), 1);
 
 
@@ -837,7 +845,7 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
     private BuyingResult buyItem(int item_id, Integer qty, Connection con) {
 
         //  long init_time = System.currentTimeMillis();
-        BuyingResult result = BuyCartItem(item_id, qty,con);
+        BuyingResult result = BuyCartItem(item_id, qty, con);
         //long end_time = System.currentTimeMillis();
         //client_result_handler.logResult("BUY ITEM", (end_time - init_time));
         return result;
@@ -869,8 +877,8 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
                 //            con = getWriteConnection();
                 setStock(con, item, stock);
 
- //               con.commit();
-               // con.setAutoCommit(true);
+                //               con.commit();
+                // con.setAutoCommit(true);
             } else {
                 return BuyingResult.NOT_AVAILABLE;
             }
@@ -2186,9 +2194,9 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
 
 
     public void AdminChange(int item_id) {
-        String original_name  =  Thread.currentThread().getName();
-        Thread.currentThread().setName( original_name + "admin");
-        System.out.println("Admin change on thread: "+ Thread.currentThread().getName());
+        String original_name = Thread.currentThread().getName();
+        Thread.currentThread().setName(original_name + "admin");
+        System.out.println("Admin change on thread: " + Thread.currentThread().getName());
 
         try {
             Connection connection = getWriteConnection();
@@ -2273,6 +2281,295 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
 
         } catch (java.lang.Exception ex) {
             ex.printStackTrace();
+        }
+
+
+    }
+
+
+    private void addIndexes() {
+
+        Connection con = getWriteConnection();
+        boolean error = false;
+
+        try {
+            con.setAutoCommit(false);
+        } catch (SQLException e) {
+        }
+
+        try {
+            PreparedStatement statement1 = con.prepareStatement
+                    ("create index author_a_lname on author(a_lname)");
+            statement1.executeUpdate();
+            PreparedStatement statement2 = con.prepareStatement
+                    ("create index address_addr_co_id on address(addr_co_id)");
+            statement2.executeUpdate();
+            PreparedStatement statement3 = con.prepareStatement
+                    ("create index addr_zip on address(addr_zip)");
+            statement3.executeUpdate();
+            PreparedStatement statement4 = con.prepareStatement
+                    ("create index customer_c_addr_id on customer(c_addr_id)");
+            statement4.executeUpdate();
+            PreparedStatement statement5 = con.prepareStatement
+                    ("create index customer_c_uname on customer(c_uname)");
+            statement5.executeUpdate();
+            PreparedStatement statement6 = con.prepareStatement
+                    ("create index item_i_title on item(i_title)");
+            statement6.executeUpdate();
+            PreparedStatement statement7 = con.prepareStatement
+                    ("create index item_i_subject on item(i_subject)");
+            statement7.executeUpdate();
+            PreparedStatement statement8 = con.prepareStatement
+                    ("create index item_i_a_id on item(i_a_id)");
+            statement8.executeUpdate();
+            PreparedStatement statement9 = con.prepareStatement
+                    ("create index order_line_ol_i_id on order_line(ol_i_id)");
+            statement9.executeUpdate();
+            PreparedStatement statement10 = con.prepareStatement
+                    ("create index order_line_ol_o_id on order_line(ol_o_id)");
+            statement10.executeUpdate();
+            PreparedStatement statement11 = con.prepareStatement
+                    ("create index country_co_name on country(co_name)");
+            statement11.executeUpdate();
+            PreparedStatement statement12 = con.prepareStatement
+                    ("create index orders_o_c_id on orders(o_c_id)");
+            statement12.executeUpdate();
+            PreparedStatement statement13 = con.prepareStatement
+                    ("create index scl_i_id on shopping_cart_line(scl_i_id)");
+            statement13.executeUpdate();
+
+            con.commit();
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Indexes created");
+        }
+
+        try {
+            con.setAutoCommit(true);
+        } catch (SQLException e) {
+        }
+    }
+
+    public void createDatabase() {
+
+        Connection connection = null;
+        for (String hostname : write_paths.keySet()) {
+
+
+            String connection_url = hostname + ":" + write_paths.get(hostname);
+
+
+            connection = null;
+            try {
+
+                String url = "jdbc:mysql://" + connection_url;
+
+                connection = DriverManager.getConnection(
+                        url, user, password);
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                logger.error("[ERROR]: Connection error", e);
+            }
+
+            break;
+
+        }
+        boolean error = false;
+
+        try {
+            PreparedStatement statement = connection.prepareStatement
+                    ("CREATE SCHEMA tpcw");
+
+            statement.executeUpdate();
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Created Schema tpcw");
+        }
+        error = false;
+    }
+
+
+    public void createTables() {
+        int i;
+
+        Connection con = getWriteConnection();
+        try {
+            con.setAutoCommit(false);
+        } catch (SQLException e) {
+        }
+
+
+        boolean error = false;
+
+        try {
+            PreparedStatement statement = con.prepareStatement
+                    ("CREATE TABLE ADDRESS ( addr_id int not null, addr_street1 varchar(40), addr_street2 varchar(40), addr_city varchar(30), addr_state varchar(20), addr_zip varchar(10), addr_co_id int, primary key(addr_id)) engine=innodb");
+            // ("CREATE TABLE ADDRESS ( ADDR_ID VARCHAR(10) not null, ADDR_STREET1 varchar(40), ADDR_STREET2 varchar(40), ADDR_CITY varchar(30), ADDR_STATE varchar(20), ADDR_ZIP varchar(10), ADDR_CO_ID int, PRIMARY KEY(ADDR_ID))");
+
+            statement.executeUpdate();
+            con.commit();
+        } catch (java.lang.Exception ex) {
+            error = true;
+
+        }
+        if (!error) {
+            System.out.println("Created table ADDRESS");
+        }
+        error = false;
+
+
+        try {
+            PreparedStatement statement = con.prepareStatement
+                    ("CREATE TABLE AUTHOR ( a_id int not null, a_fname varchar(20), a_lname varchar(20), a_mname varchar(20), a_dob date, a_bio varchar(500), primary key(a_id)) ENGINE=innodb");
+
+
+            statement.executeUpdate();
+            con.commit();
+            System.out.println("Created table AUTHOR");
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Created table AUTHOR");
+
+        }
+        error = false;
+
+
+        try {
+            PreparedStatement statement = con.prepareStatement
+                    ("CREATE TABLE CC_XACTS ( cx_o_id int not null, cx_type varchar(10), cx_num varchar(20), cx_name varchar(30), cx_expire date, cx_auth_id char(15), cx_xact_amt double, cx_xact_date date, cx_co_id int, primary key(cx_o_id)) ENGINE=innodb");
+
+            statement.executeUpdate();
+            con.commit();
+
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Created table CC_XACTS");
+        }
+        error = false;
+
+        try {
+            PreparedStatement statement = con.prepareStatement
+                    ("CREATE TABLE COUNTRY ( co_id int not null, co_name varchar(50), co_exchange double, co_currency varchar(18), primary key(co_id)) ENGINE=innodb");
+
+            statement.executeUpdate();
+            con.commit();
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Created table COUNTRY");
+        }
+        error = false;
+
+        try {
+            PreparedStatement statement = con.prepareStatement
+                    ("CREATE TABLE CUSTOMER ( c_id int not null, c_uname varchar(20), c_passwd varchar(20), c_fname varchar(17), c_lname varchar(17), c_addr_id int, c_phone varchar(18), c_email varchar(50), c_since date, c_last_visit date, c_login timestamp, c_expiration timestamp, c_discount real, c_balance double, c_ytd_pmt double, c_birthdate date, c_data varchar(510), primary key(c_id)) ENGINE=innodb");
+//            ("CREATE TABLE CUSTOMER ( C_ID VARCHAR(10) not null, C_UNAME varchar(20), C_PASSWD varchar(20), C_FNAME varchar(17), C_LNAME varchar(17), C_ADDR_ID VARCHAR(10), C_PHONE varchar(18), C_EMAIL varchar(50), C_SINCE date, C_LAST_VISIT date, C_LOGIN timestamp, C_EXPIRATION timestamp, C_DISCOUNT real, C_BALANCE double, C_YTD_PMT double, C_BIRTHDATE date, C_DATA varchar(510), PRIMARY KEY(C_ID))");
+            statement.executeUpdate();
+            con.commit();
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Created table CUSTOMER");
+        }
+        error = false;
+
+        try {
+            PreparedStatement statement = con.prepareStatement
+                    ("CREATE TABLE ITEM ( i_id int not null, i_title varchar(60), i_a_id int, i_pub_date date, i_publisher varchar(60), i_subject varchar(60), i_desc varchar(500), i_related1 int, i_related2 int, i_related3 int, i_related4 int, i_related5 int, i_thumbnail varchar(40), i_image varchar(40), i_srp double, i_cost double, i_avail date, i_stock int, i_isbn char(13), i_page int, i_backing varchar(15), i_dimension varchar(25), primary key(i_id)) ENGINE=innodb");
+            statement.executeUpdate();
+            con.commit();
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Created table ITEM");
+        }
+        error = false;
+
+        try {
+            PreparedStatement statement = con.prepareStatement
+                    ("CREATE TABLE ORDER_LINE ( ol_id int not null, ol_o_id int not null, ol_i_id int, ol_qty int, ol_discount double, ol_comments varchar(110), primary key(ol_id, ol_o_id)) ENGINE=innodb");
+            statement.executeUpdate();
+            con.commit();
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Created table ORDER_LINE");
+        }
+        error = false;
+
+
+        try {
+            PreparedStatement statement = con.prepareStatement
+                    ("CREATE TABLE ORDERS ( o_id int not null, o_c_id int, o_date date, o_sub_total double, o_tax double, o_total double, o_ship_type varchar(10), o_ship_date date, o_bill_addr_id int, o_ship_addr_id int, o_status varchar(15), primary key(o_id)) ENGINE=innodb");
+            //         ("CREATE TABLE ORDERS ( O_ID varchar(10) not null, O_C_ID varchar(10), O_DATE date, O_SUB_TOTAL double, O_TAX double, O_TOTAL double, O_SHIP_TYPE varchar(10), O_SHIP_DATE date, O_BILL_ADDR_ID varchar(10), O_SHIP_ADDR_ID varchar(10), O_STATUS varchar(15), PRIMARY KEY(O_ID))");
+            statement.executeUpdate();
+            con.commit();
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Created table ORDERS");
+        }
+        error = false;
+
+        try {
+            PreparedStatement statement = con.prepareStatement
+                    ("CREATE TABLE SHOPPING_CART ( sc_id int not null, sc_time timestamp, sc_sub_total float default null, sc_tax float default 0 , sc_ship_cost float default 0 , sc_total float default 0 , primary key(sc_id)) ENGINE=innodb");
+            statement.executeUpdate();
+            con.commit();
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Created table SHOPPING_CART");
+        }
+        error = false;
+
+
+        try {
+            PreparedStatement statement = con.prepareStatement
+                    ("CREATE TABLE SHOPPING_CART_LINE ( scl_sc_id int not null, scl_qty int, scl_i_id int not null,scl_cost float default 0 , scl_srp double default 0 ,  scl_title mediumtext , scl_backing mediumtext , primary key(scl_sc_id, scl_i_id)) ENGINE=innodb");
+            statement.executeUpdate();
+            con.commit();
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Created table SHOPPING_CART_LINE");
+        }
+        error = false;
+
+
+        try {
+            PreparedStatement statement = con.prepareStatement
+                    ("CREATE TABLE RESULTS ( client_id int not null, item_id int not null, stock int not null, bought int not null, primary key( item_id,client_id)) engine=innodb");
+            statement.executeUpdate();
+            con.commit();
+            System.out.println("Created table RESULTS");
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Created table SHOPPING_CART_LINE");
+        }
+        error = false;
+
+        try {
+            con.setAutoCommit(true);
+        } catch (SQLException e) {
         }
 
 
