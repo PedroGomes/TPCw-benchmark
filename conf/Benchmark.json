@@ -3,7 +3,7 @@
       {
          "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.generic.workloads.TPCWWorkloadFactory",
          "DataEngineInterface" : "org.uminho.gsd.benchmarks.TPCW_MySQL.executor.TPCW_MySQL_Factory",
-         "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.generic.populator.Populator"
+         "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.TPCW_MySQL.populator.Populator"
       },
    "BenchmarkInfo" :
       {
@@ -27,7 +27,7 @@
          "mysql" :
             {
                "DataEngineInterface" : "org.uminho.gsd.benchmarks.TPCW_MySQL.executor.TPCW_MySQL_Factory",
-               "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.generic.populator.Populator",
+               "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.TPCW_MySQL.populator.Populator",
                "databaseExecutorConfiguration" : "MYSQL.json"
             },
          "orm" :
