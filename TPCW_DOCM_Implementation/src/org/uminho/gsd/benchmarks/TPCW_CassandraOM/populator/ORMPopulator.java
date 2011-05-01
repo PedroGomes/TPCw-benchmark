@@ -24,11 +24,9 @@
 package org.uminho.gsd.benchmarks.TPCW_CassandraOM.populator;
 
 
-//import com.spidertracks.datanucleus.client.Consistency;
-//import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.uminho.gsd.benchmarks.TPCW_CassandraOM.entities.*;
 import org.uminho.gsd.benchmarks.generic.helpers.NodeKeyGenerator;
-import org.uminho.gsd.benchmarks.generic.populator.Constants;
+import org.uminho.gsd.benchmarks.generic.Constants;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.BenchmarkUtil;
 import org.uminho.gsd.benchmarks.helpers.TestClass;
@@ -52,8 +50,8 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
     /**
      * Time measurements
      */
-    private static boolean delay_inserts = false;
-    private static int delay_time = 100;
+    private static boolean delay_inserts = true;
+    private static int delay_time = 2000;
     private static Random rand = new Random();
     private int rounds = 500;
     private ResultHandler results;
@@ -75,9 +73,6 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
     ArrayList<Address> addresses = new ArrayList<Address>();
     ArrayList<Country> countries = new ArrayList<Country>();
     ArrayList<Customer> costumers = new ArrayList<Customer>();
-
-    TreeMap<String,Integer> address_use = new TreeMap<String, Integer>();
-
 
     ArrayList<Item> items = new ArrayList<Item>();
 
@@ -207,11 +202,6 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
                     Thread.sleep(delay_time);
                 }
 
-                for(String address : address_use.keySet()){
-                    if(address_use.get(address)>1){
-                        System.out.println("USED SERVERAL TIMES: "+address);
-                    }
-                }
 
                 insertAuthors(NUM_AUTHORS, true);
                 if (client_error) {
@@ -615,7 +605,6 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
                 //insert(C_DATA, key, "Customer", "C_DATA", writeCon);
 
                 Address address = addresses.get(rand.nextInt(addresses.size()));
-                address_use.put(address.getAddr_id(), address_use.get(address.getAddr_id()) + 1);
                 //insert(address.getAddr_id(), key, "Customer", "C_ADDR_ID", writeCon);
 
                 Customer c = new Customer("0." + (base + i) + "", key, pass, last_name, first_name, phone, email, C_SINCE, C_LAST_LOGIN, C_LOGIN, C_EXPIRATION, C_BALANCE, C_YTD_PMT, C_BIRTHDATE, C_DATA, discount, address);
@@ -666,8 +655,6 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
                     value.setAddress(addr);
                 }catch (javax.jdo.JDOObjectNotFoundException e){
 
-                    System.out.println("ADDRESS NOT FOUND: "+addr_id);
-                    System.out.println("ADDRESS USE: "+ address_use.get(addr_id));
                     TestClass.getAddress(addr_id);
                     String address = addr_id;
                     while(address.equals(addr_id)){
@@ -753,7 +740,6 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
     }
 
     class ItemPopulator implements Runnable {
-
 
         DatabaseExecutorInterface client;
         int num_items;
@@ -1022,8 +1008,6 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
             int id = value.getCountry().getCo_id();
 
-
-            address_use.put(value.getAddr_id(),0);
 
             PersistenceManager pm = pmf.getPersistenceManager();
             Transaction tx = pm.currentTransaction();
