@@ -17,7 +17,7 @@
  * ********************************************************************
  */
 
-package org.uminho.gsd.benchmarks.TPCW_MySQL.populator;
+package org.uminho.gsd.benchmarks.generic;
 
 
 public class Constants {

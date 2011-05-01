@@ -21,7 +21,7 @@ package org.uminho.gsd.benchmarks.generic.workloads;
 
 
 import org.apache.log4j.Logger;
-import org.uminho.gsd.benchmarks.generic.populator.Constants;
+import org.uminho.gsd.benchmarks.generic.Constants;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkNodeID;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.ProgressBar;

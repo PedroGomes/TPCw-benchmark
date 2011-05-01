@@ -26,6 +26,7 @@ package org.uminho.gsd.benchmarks.TPCW_MySQL.populator;
 
 
 
+import org.uminho.gsd.benchmarks.generic.Constants;
 import org.uminho.gsd.benchmarks.generic.entities.*;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.BenchmarkUtil;
