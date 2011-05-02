@@ -2,7 +2,7 @@
 "DataBaseInfo":{
 	"database":"TPCW",
 	"user":"root",
-	"password":"naosei"
+	"password":""
 	},
 "MasterConnections":{
 	"localhost":"3306"
@@ -24,6 +24,6 @@
     "192.168.82.166":"3306"
 	},
 "Instructions":{
-	"writes reads":" Can assume ALL,MASTER or SLAVE values. Only sets machine tipes, not numbers"	
+	"writes reads":" Can assume ALL,MASTER or SLAVE values. Only sets machine types, not addresses"
 	}
 }
