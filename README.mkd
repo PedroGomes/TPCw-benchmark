@@ -70,7 +70,7 @@ This database allows the use of different populating classes, database executing
 - Cassandra support only for 0.6, but the code is easy to change if needed.  
 - The population process started in a generic form and for that reason the Cassandra populator reads what fields it should use to create super columns; maybe this doesn't make sense anymore.
 - Bad use of log4j.
-- One of the main problems in the MySQL benchmark is the client side generation of ids. Avoiding the overhead of transactions (and synchronization mechanism have to be implemented outside the system as it can exist 2 or more benchmark nodes executing at the same time), some of the queries may need changes. 
+- One of the problems in the MySQL benchmark is the client side generation of ids. Avoiding the overhead of transactions or auto increment (synchronization mechanisms as seen in other implementations are not suitable with the multi node mode) some of the queries may have minor changes due to their ids. 
 - On consistency workload the stock of items is usually a high number to ease the analyze of the data, on normal TPCW workloads the stock is updated when the coded minimum is reached as supposed, but in Cassandra no guaranties are made about the outcome of that process.   
 
 # Feedback
