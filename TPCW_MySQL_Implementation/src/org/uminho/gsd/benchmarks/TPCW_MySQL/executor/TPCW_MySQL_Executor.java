@@ -2443,7 +2443,7 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
 
         try {
             PreparedStatement statement = con.prepareStatement
-                    ("CREATE TABLE CC_XACTS ( cx_o_id int not null, cx_type varchar(10), cx_num varchar(20), cx_name varchar(30), cx_expire date, cx_auth_id char(15), cx_xact_amt double, cx_xact_date date, cx_co_id int, primary key(cx_o_id)) ENGINE=innodb");
+                    ("CREATE TABLE CC_XACTS ( cx_o_id int not null, cx_type varchar(10), cx_num varchar(20), cx_name varchar(30), cx_expiry date, cx_auth_id char(15), cx_xact_amt double, cx_xact_date date, cx_co_id int, primary key(cx_o_id)) ENGINE=innodb");
 
             statement.executeUpdate();
             con.commit();
