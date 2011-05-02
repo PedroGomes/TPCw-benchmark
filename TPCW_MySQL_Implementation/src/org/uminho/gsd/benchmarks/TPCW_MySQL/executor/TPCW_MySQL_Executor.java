@@ -300,6 +300,8 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
         if (method_name.equalsIgnoreCase("CREATE_TABLES")) {
             createTables();
             addIndexes();
+        } else if (method_name.equalsIgnoreCase("REMOVE_CREATE_DATABASE")) {
+              remove_and_create_Database();
         } else if (method_name.equalsIgnoreCase("GET_STOCK_AND_PRODUCTS")) {
             ArrayList<String> fields = new ArrayList<String>();
             fields.add("i_title");
@@ -672,6 +674,36 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
         return cl;
     }
 
+    public Connection getRawConnection() {
+
+
+        Connection connection = null;
+
+        for (String hostname : write_paths.keySet()) {
+
+
+            String connection_url = hostname + ":" + write_paths.get(hostname);
+
+
+            connection = null;
+            try {
+
+                String url = "jdbc:mysql://" + connection_url;
+
+                connection = DriverManager.getConnection(
+                        url, user, password);
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                logger.error("[ERROR]: Connection error", e);
+            }
+
+            break;
+
+        }
+
+        return connection;
+    }
 
     /**
      * ************
@@ -2169,7 +2201,6 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
         }
     }
 
-
     public void ItemInfo(int id) {
         try {
             Connection connection = getReadConnection();
@@ -2191,7 +2222,6 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
         }
 
     }
-
 
     public void AdminChange(int item_id) {
         String original_name = Thread.currentThread().getName();
@@ -2351,31 +2381,43 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
         }
     }
 
+
+    public void remove_and_create_Database() {
+        Connection connection = getRawConnection();
+
+        boolean error = false;
+
+        try {
+            PreparedStatement statement = connection.prepareStatement
+                    ("DROP DATABASE tpcw");
+
+            statement.executeUpdate();
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Deleted database tpcw");
+        }
+        error = false;
+
+        try {
+            PreparedStatement statement = connection.prepareStatement
+                    ("CREATE DATABASE tpcw");
+
+            statement.executeUpdate();
+        } catch (java.lang.Exception ex) {
+            error = true;
+        }
+        if (!error) {
+            System.out.println("Created database tpcw");
+        }
+        error = false;
+    }
+
     public void createDatabase() {
 
-        Connection connection = null;
-        for (String hostname : write_paths.keySet()) {
+        Connection connection = getRawConnection();
 
-
-            String connection_url = hostname + ":" + write_paths.get(hostname);
-
-
-            connection = null;
-            try {
-
-                String url = "jdbc:mysql://" + connection_url;
-
-                connection = DriverManager.getConnection(
-                        url, user, password);
-
-            } catch (SQLException e) {
-                e.printStackTrace();
-                logger.error("[ERROR]: Connection error", e);
-            }
-
-            break;
-
-        }
         boolean error = false;
 
         try {

@@ -244,26 +244,30 @@ public class Populator extends AbstractBenchmarkPopulator {
     public void removeALL() throws Exception {
 
         DatabaseExecutorInterface client = databaseClientFactory.getDatabaseClient();
-        client.truncate("Customer");
-        client.truncate("Item");
-        client.truncate("Orders");
-        client.truncate("Order_Line");
-        client.truncate("CC_XACTS");
-        client.truncate("Author");
-        client.truncate("Country");
-        client.truncate("Address");
-        client.truncate("Shopping_Cart");
-        client.truncate("Shopping_Cart_Line");
-        client.truncate("Results");
 
         Map<String, Object> param = new TreeMap<String, Object>();
-        param.put("NUM_A", NUM_ADDRESSES);
-        param.put("NUM_C",NUM_CUSTOMERS);
-        try {
-            client.execute(new Operation("DELETE_ADDR_CUST", param));
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
+        client.execute(new Operation("REMOVE_CREATE_DATABASE", param));
+
+//        client.truncate("Customer");
+//        client.truncate("Item");
+//        client.truncate("Orders");
+//        client.truncate("Order_Line");
+//        client.truncate("CC_XACTS");
+//        client.truncate("Author");
+//        client.truncate("Country");
+//        client.truncate("Address");
+//        client.truncate("Shopping_Cart");
+//        client.truncate("Shopping_Cart_Line");
+//        client.truncate("Results");
+
+//        Map<String, Object> param = new TreeMap<String, Object>();
+//        param.put("NUM_A", NUM_ADDRESSES);
+//        param.put("NUM_C",NUM_CUSTOMERS);
+//        try {
+//            client.execute(new Operation("DELETE_ADDR_CUST", param));
+//        } catch (NoSuchFieldException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
 //        try {
 //           // insertAuthors(NUM_AUTHORS,true);
 //            insertItems(NUM_ITEMS);
