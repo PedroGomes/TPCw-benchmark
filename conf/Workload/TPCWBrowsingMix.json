@@ -2,7 +2,7 @@
 "Configuration":{	
 	"name":"TPCW_BROWSING_WORKLOAD",
 	"initialStock":"500000",
-    "resultPath":"./Results"	
+    "resultPath":"/Results/browsing"
 	},	
 "ProbabilityDistributions":{
 	"Distribution":"org.uminho.gsd.benchmarks.probabilityDistributions.PowerLawDistribution",

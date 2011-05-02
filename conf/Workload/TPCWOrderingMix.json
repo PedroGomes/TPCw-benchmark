@@ -2,7 +2,7 @@
 "Configuration":{	
 	"name":"TPCW_ORDERING_WORKLOAD",
 	"initialStock":"500000",
-    "resultPath":"./Results/cenas"	
+    "resultPath":"/Results/ordering"
 	},	
 "ProbabilityDistributions":{
 	"Distribution":"org.uminho.gsd.benchmarks.probabilityDistributions.PowerLawDistribution",
