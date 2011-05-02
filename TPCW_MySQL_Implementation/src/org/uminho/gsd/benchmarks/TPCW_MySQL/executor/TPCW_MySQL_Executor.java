@@ -2196,7 +2196,6 @@ public class TPCW_MySQL_Executor implements DatabaseExecutorInterface {
     public void AdminChange(int item_id) {
         String original_name = Thread.currentThread().getName();
         Thread.currentThread().setName(original_name + "admin");
-        System.out.println("Admin change on thread: " + Thread.currentThread().getName());
 
         try {
             Connection connection = getWriteConnection();
