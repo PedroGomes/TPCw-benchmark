@@ -38,7 +38,6 @@ import org.uminho.gsd.benchmarks.interfaces.populator.AbstractBenchmarkPopulator
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
-import javax.jdo.Transaction;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.*;
@@ -303,17 +302,13 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
 		PersistenceManager pm = pmf.getPersistenceManager();
 		long time1 = System.currentTimeMillis();
-		Transaction tx = pm.currentTransaction();
+
 		try {
 
-			tx.begin();
+
 			pm.makePersistent(value);
-			tx.commit();
 
 		} finally {
-			if (tx.isActive()) {
-				tx.rollback();
-			}
 			pm.close();
 		}
 
@@ -685,45 +680,28 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 			String addr_id = value.getAddress().getAddr_id();
 
 			PersistenceManager pm = pmf.getPersistenceManager();
-			Transaction tx = pm.currentTransaction();
+			long time1 = System.currentTimeMillis();
+
 			try {
-				long time1 = System.currentTimeMillis();
-				tx.begin();
-
-
 				try {
 
 					Address addr = pm.getObjectById(Address.class, addr_id);
 					value.setAddress(addr);
 				} catch (javax.jdo.JDOObjectNotFoundException e) {
 
-					TestClass.getAddress(addr_id);
-					String address = addr_id;
-					while (address.equals(addr_id)) {
-						address = addresses.get(rand.nextInt(addresses.size())).getAddr_id();
-					}
-					System.out.println("RAND address");
-					TestClass.getAddress(address);
-
 					throw e;
-//                    for(Address address : addresses){
-//                        if(address.getStreet1() == null || address.getStreet1().isEmpty() ){
-//                            System.out.println("EPIC FAIL: ADDRESS IS EMPTY "+address.toString());
-//                        }
-//                    }
+//
 				}
 
 				pm.makePersistent(value);
-				tx.commit();
 				long time2 = System.currentTimeMillis();
 				results.logResult(Operation, time2 - time1);
 
 			} finally {
-				if (tx.isActive()) {
-					tx.rollback();
-				}
 				pm.close();
 			}
+
+
 		}
 
 	}
@@ -932,22 +910,16 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
 
 			long time1 = System.currentTimeMillis();
-			Transaction tx = pm.currentTransaction();
 			try {
-				tx.begin();
 				Author author = pm.getObjectById(Author.class, author_id);
 
 				value.setI_AUTHOR(author);
 
 
 				pm.makePersistent(value);
-				tx.commit();
 
 
 			} finally {
-				if (tx.isActive()) {
-					tx.rollback();
-				}
 				pm.close();
 			}
 
@@ -1052,10 +1024,8 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
 
 			PersistenceManager pm = pmf.getPersistenceManager();
-			Transaction tx = pm.currentTransaction();
 			try {
 
-				tx.begin();
 
 				Country c = pm.getObjectById(Country.class, id);
 				value.setCountry(c);
@@ -1065,13 +1035,9 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 				}
 
 				pm.makePersistent(value);
-				tx.commit();
 
 
 			} finally {
-				if (tx.isActive()) {
-					tx.rollback();
-				}
 				pm.close();
 			}
 
@@ -1314,11 +1280,9 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 		public void databaseInsert(Order order, List<OrderLine> orderLines, CCXact ccXact) throws Exception {
 
 			PersistenceManager pm = pmf.getPersistenceManager();
-			Transaction tx = pm.currentTransaction();
 
 			try {
 
-				tx.begin();
 
 				String costumer_id = order.getO_C_ID().getC_id();
 
@@ -1357,13 +1321,10 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
 				pm.makePersistent(ccXact);
 
-				tx.commit();
 
 
 			} finally {
-				if (tx.isActive()) {
-					tx.rollback();
-				}
+
 				pm.close();
 			}
 
