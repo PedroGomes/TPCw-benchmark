@@ -43,9 +43,12 @@ public class BenchmarkMain {
 
     private BenchmarkExecutor executor;
 
-    private AbstractBenchmarkPopulator populator;
+    private String populatorClass;
     private Class worload;
     private Class databaseExecutor;
+
+    private AbstractBenchmarkPopulator populator;
+
 
     private static BenchmarkNodeID id;
 
@@ -244,6 +247,10 @@ public class BenchmarkMain {
 
     public void run(boolean master, boolean slave, boolean cleanDB, boolean cleanFB, boolean populate, boolean cap) throws Exception {
 
+        //to avoid extra instantiations.
+     //   if(cap || populate || cleanFB || cleanFB){
+            populator = (AbstractBenchmarkPopulator) Class.forName(populatorClass).getConstructor(AbstractDatabaseExecutorFactory.class, String.class).newInstance(executor.getDatabaseInterface(), populator_conf);
+       // }
 
         if (slave) {
             BenchmarkSlave slaveHandler = new BenchmarkSlave(SlavePort, executor);
@@ -350,7 +357,7 @@ public class BenchmarkMain {
             Map<String, Object> databaseInfo = map.get("BenchmarkInterfaces");
 
             String databaseClass = "";
-            String populatorClass = "";
+            populatorClass = "";
 
             if (data_alias == null || data_alias.isEmpty()) {
 
@@ -519,22 +526,10 @@ public class BenchmarkMain {
 
             executor = new BenchmarkExecutor(worload, workload_conf, databaseExecutor, executor_conf, operation_number, number_threads);
 
-            populator = (AbstractBenchmarkPopulator) Class.forName(populatorClass).getConstructor(AbstractDatabaseExecutorFactory.class, String.class).newInstance(executor.getDatabaseInterface(), populator_conf);
 
             return true;
 
-        } catch (NoSuchMethodException ex) {
-            logger.error("", ex);
-        } catch (SecurityException ex) {
-            logger.error("", ex);
-        } catch (InstantiationException ex) {
-            logger.error("", ex);
-        } catch (IllegalAccessException ex) {
-            logger.error("", ex);
-        } catch (IllegalArgumentException ex) {
-            logger.error("", ex);
-        } catch (InvocationTargetException ex) {
-            logger.error("", ex);
+
 
         } catch (ClassNotFoundException ex) {
             logger.error("", ex);
