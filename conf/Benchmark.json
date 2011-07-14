@@ -41,7 +41,7 @@
       {
          "consistency" :
             {
-               "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.generic.workloads.ConsistencyTestWorkloadFactory ",
+               "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.generic.workloads.ConsistencyTestWorkloadFactory",
                "workloadConfiguration" : "TPCWConsistency.json"
             },
          "ordering" :
