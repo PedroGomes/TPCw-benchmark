@@ -98,6 +98,10 @@ public class BenchmarkExecutor {
         final String workloadName = workloadInterface.getName();
         final CountDownLatch synchronizationBarrier = new CountDownLatch(num_clients);
 
+		ResultHandler stats_handler = new ResultHandler("workloadName",-1);
+		results.add(stats_handler);
+		databaseInterface.setStats_handler(stats_handler);
+		databaseInterface.startStats();
 
         for (int client_index = 0; client_index < num_clients; client_index++) {
 
