@@ -22,10 +22,12 @@ package org.uminho.gsd.benchmarks.interfaces.executor;
 
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkExecutor;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkNodeID;
+import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.JsonUtil;
+import org.uminho.gsd.benchmarks.helpers.TPM_counter;
 
 import java.io.*;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,86 +39,134 @@ import java.util.logging.Logger;
  */
 public abstract class AbstractDatabaseExecutorFactory {
 
-    /**
-     * Information collected from the configuration file *
-     */
-    protected Map<String, Map<String, String>> conf;
-    //Configuration file name
-    private String dataStore_file_name;
-    /**
-     * BenchmarkExecutor*
-     */
-    protected BenchmarkExecutor executor;
-    /**
-     * Benchmarking node id*
-     */
-    protected BenchmarkNodeID nodeID;
-    /**
-     *The number of clients in one node*
-     */
-    protected int client_number;
+	/**
+	 * Information collected from the configuration file *
+	 */
+	protected Map<String, Map<String, String>> conf;
+	//Configuration file name
+	private String dataStore_file_name;
+	/**
+	 * BenchmarkExecutor*
+	 */
+	protected BenchmarkExecutor executor;
+	/**
+	 * Benchmarking node id*
+	 */
+	protected BenchmarkNodeID nodeID;
+	/**
+	 * The number of clients in one node*
+	 */
+	protected int client_number;
 
 
-    protected AbstractDatabaseExecutorFactory(BenchmarkExecutor executor, String conf_file) {
+	protected List<TPM_counter> tpm_counters = new LinkedList<TPM_counter>();
 
-        this.dataStore_file_name = conf_file;
-        this.executor = executor;
-        loadFile();
-    }
 
-    /**
-     * Method that loads workload info.
-     */
-    private void loadFile() {
+	private Timer data_extraction = new Timer("Statistics calculation", true);
 
-        FileInputStream in = null;
-        String jsonString_r = "";
+	private ResultHandler stats_handler;
 
-        if (!dataStore_file_name.endsWith(".json")) {
-            dataStore_file_name = dataStore_file_name + ".json";
-        }
+	private boolean do_tmp_counting = false;
 
-        try {
-            in = new FileInputStream("conf/DataStore/" + dataStore_file_name);
-            BufferedReader bin = new BufferedReader(new InputStreamReader(in));
-            String s = "";
-            StringBuilder sb = new StringBuilder();
-            while (s != null) {
-                sb.append(s);
-                s = bin.readLine();
-            }
-            jsonString_r = sb.toString().replace("\n", "");
-            bin.close();
-            in.close();
 
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(AbstractDatabaseExecutorFactory.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(AbstractDatabaseExecutorFactory.class.getName()).log(Level.SEVERE, null, ex);
+	protected AbstractDatabaseExecutorFactory(BenchmarkExecutor executor, String conf_file) {
 
-        } finally {
-            try {
-                in.close();
-            } catch (IOException ex) {
-                Logger.getLogger(AbstractDatabaseExecutorFactory.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
+		this.dataStore_file_name = conf_file;
+		this.executor = executor;
+		loadFile();
+	}
 
-        Map<String, Map<String, String>> map = JsonUtil.getStringMapMapFromJsonString(jsonString_r);
-        conf = map;
-    }
+	/**
+	 * Method that loads workload info.
+	 */
+	private void loadFile() {
 
-    public abstract DatabaseExecutorInterface getDatabaseClient();
+		FileInputStream in = null;
+		String jsonString_r = "";
 
-    public void setNodeId(BenchmarkNodeID id) {
-        nodeID = id;
-    }
+		if (!dataStore_file_name.endsWith(".json")) {
+			dataStore_file_name = dataStore_file_name + ".json";
+		}
 
-    /**
-     * Sets the number of used clients in one node.
-     */
-    public void setClientNumber(int client_number) {
-        this.client_number = client_number;
+		try {
+			in = new FileInputStream("conf/DataStore/" + dataStore_file_name);
+			BufferedReader bin = new BufferedReader(new InputStreamReader(in));
+			String s = "";
+			StringBuilder sb = new StringBuilder();
+			while (s != null) {
+				sb.append(s);
+				s = bin.readLine();
+			}
+			jsonString_r = sb.toString().replace("\n", "");
+			bin.close();
+			in.close();
 
-    }
+		} catch (FileNotFoundException ex) {
+			Logger.getLogger(AbstractDatabaseExecutorFactory.class.getName()).log(Level.SEVERE, null, ex);
+		} catch (IOException ex) {
+			Logger.getLogger(AbstractDatabaseExecutorFactory.class.getName()).log(Level.SEVERE, null, ex);
+
+		} finally {
+			try {
+				in.close();
+			} catch (IOException ex) {
+				Logger.getLogger(AbstractDatabaseExecutorFactory.class.getName()).log(Level.SEVERE, null, ex);
+			}
+		}
+
+		Map<String, Map<String, String>> map = JsonUtil.getStringMapMapFromJsonString(jsonString_r);
+		conf = map;
+	}
+
+	public abstract DatabaseExecutorInterface getDatabaseClient();
+
+
+	public void startStats() {
+		data_extraction.schedule(tpm_calculation, 60000, 60000);
+	}
+
+	public void setNodeId(BenchmarkNodeID id) {
+		nodeID = id;
+	}
+
+	/**
+	 * Sets the number of used clients in one node.
+	 */
+	public void setClientNumber(int client_number) {
+		this.client_number = client_number;
+
+	}
+
+
+	public void setStats_handler(ResultHandler stats_handler) {
+		this.stats_handler = stats_handler;
+	}
+
+	TimerTask tpm_calculation = new TimerTask() {
+
+		public void run() {
+			int tpm = 0;
+			if (do_tmp_counting) {
+				for (TPM_counter tpm_counter : tpm_counters) {
+					tpm += tpm_counter.get_and_reset();
+				}
+			    if(stats_handler!=null){
+					stats_handler.logResult("TPM", (tpm));
+					System.out.println("TPM:" + tpm);
+				}
+			}
+
+		}
+	};
+
+
+	public synchronized void registerCounter(TPM_counter tpm_counter) {
+		tpm_counters.add(tpm_counter);
+	}
+
+
+	public void initTMPCounting() {
+		do_tmp_counting = true;
+	}
+
 }
