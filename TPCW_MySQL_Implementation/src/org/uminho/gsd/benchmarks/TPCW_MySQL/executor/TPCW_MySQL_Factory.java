@@ -21,6 +21,7 @@ package org.uminho.gsd.benchmarks.TPCW_MySQL.executor;
 
 import org.apache.log4j.Logger;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkExecutor;
+import org.uminho.gsd.benchmarks.helpers.TPM_counter;
 import org.uminho.gsd.benchmarks.interfaces.executor.AbstractDatabaseExecutorFactory;
 import org.uminho.gsd.benchmarks.interfaces.executor.DatabaseExecutorInterface;
 
@@ -52,6 +53,13 @@ public class TPCW_MySQL_Factory extends AbstractDatabaseExecutorFactory {
 
         Map<String, String> masters;
         Map<String, String> slaves = null;
+
+
+		if (conf.containsKey("Isolation_level")) {
+            database = conf.get("Isolation_level").get("level");
+
+        }
+
 
 
         if (conf.containsKey("DataBaseInfo")) {
@@ -113,13 +121,20 @@ public class TPCW_MySQL_Factory extends AbstractDatabaseExecutorFactory {
         }
 
 
+		initTMPCounting();
+
     }
+
+
+
 
     @Override
     public DatabaseExecutorInterface getDatabaseClient() {
 
 
-        return new TPCW_MySQL_Executor(database, user ,password, readPaths, writesPaths,this.client_number);
+		TPM_counter tpm_counter = new TPM_counter();
+		registerCounter(tpm_counter);
+        return new TPCW_MySQL_Executor(database, user ,password, readPaths, writesPaths,this.client_number,tpm_counter);
 
     }
 }
