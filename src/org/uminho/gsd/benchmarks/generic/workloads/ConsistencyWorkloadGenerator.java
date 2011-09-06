@@ -56,13 +56,27 @@ public class ConsistencyWorkloadGenerator implements WorkloadGeneratorInterface 
     //Last used cart
     private int cart;
 
+	private int mean_cart_items = ConsistencyTestWorkloadFactory.mean_cart_items;
+
 
     ProgressBar progressBar;
 
     private Random rand;
 
     public ConsistencyWorkloadGenerator(List<String> items, ProbabilityDistribution distribution, String clientID, int personal_number, ProgressBar progressBar) {
-        this.items = items;
+
+		HashSet<Integer> sorted_items = new HashSet<Integer>();
+		for (String item : items) {
+			int item_id = Integer.parseInt(item);
+			sorted_items.add(item_id);
+		}
+
+		this.items = new ArrayList<String>();
+		for (Integer sorted_item : sorted_items) {
+			this.items.add(sorted_item+"");
+		}
+
+
         this.distribution = distribution.getNewInstance();
         this.clientID = clientID;
         this.private_id = personal_number;
@@ -81,6 +95,9 @@ public class ConsistencyWorkloadGenerator implements WorkloadGeneratorInterface 
         watching_item = false;
         cart++;
         int item_num = rand.nextInt(9) + 1;
+
+   //   	item_num = 5;
+
         for (int num = 0; num < item_num; num++) {
 
             int item_index = distribution.getNextElement();
@@ -95,7 +112,7 @@ public class ConsistencyWorkloadGenerator implements WorkloadGeneratorInterface 
 
         progressBar.increment(private_id);
         Operation op = null;
-        if (items_to_buy.isEmpty()) {
+        if (items_to_buy.isEmpty() && watching_item == false) {
 
             Map<String, Object> parameters = new TreeMap<String, Object>();
             parameters.put("CART_ID", clientID + "." + cart);
@@ -125,7 +142,7 @@ public class ConsistencyWorkloadGenerator implements WorkloadGeneratorInterface 
 
                     if (stock < 0)
                         System.out.println("[ERROR:] CANT RETRIEVE STOCK FOR ITEM : " + last_item);
-                    op = new Operation("ERROR", null);
+                    op = new Operation("INVALID_STOCK", null);
                     return op;
                 } else if (stock > 0) {
                     int limit = (stock > 5) ? 5 : stock;
