@@ -31,6 +31,7 @@ import org.uminho.gsd.benchmarks.benchmark.BenchmarkNodeID;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.generic.BuyingResult;
 import org.uminho.gsd.benchmarks.helpers.BenchmarkUtil;
+import org.uminho.gsd.benchmarks.helpers.TPM_counter;
 import org.uminho.gsd.benchmarks.helpers.ThinkTime;
 import org.uminho.gsd.benchmarks.interfaces.Entity;
 import org.uminho.gsd.benchmarks.interfaces.KeyGenerator;
@@ -146,6 +147,9 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 	KeyGenerator keyGenerator;
 
 
+	private TPM_counter counter;
+
+
 	/**
 	 * Know Cfamilies
 	 */
@@ -178,7 +182,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 	 * @param think_time
 	 * @param search_slices
 	 */
-	public TPCWCassandraExecutor(String keyspace, Map<String, Integer> connections, ConsistencyLevel[] consistencyLevels, Map<String, String> key_paths, int think_time, int search_slices, KeyGenerator keyGenerator) {
+	public TPCWCassandraExecutor(String keyspace, Map<String, Integer> connections, ConsistencyLevel[] consistencyLevels, Map<String, String> key_paths, int think_time, int search_slices, KeyGenerator keyGenerator,TPM_counter tpm_counter) {
 
 		this.keyspace = keyspace;
 		this.keyGenerator = keyGenerator;
@@ -193,6 +197,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		this.connections = connections;
 		this.keyspace = keyspace;
 		this.paths = key_paths;
+		this.counter = tpm_counter;
 
 		Map<String, Integer> sortedConnections = BenchmarkUtil.randomizeMap(connections);
 
@@ -330,7 +335,8 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 			}
 			long end_time = System.currentTimeMillis();
-					client_result_handler.logResult("OPERATIONS", (end_time - g_init_time));
+			counter.increment();
+			client_result_handler.logResult("OPERATIONS", (end_time - g_init_time));
 
 
 		}

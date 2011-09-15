@@ -23,6 +23,7 @@ package org.uminho.gsd.benchmarks.TPCW_Cassandra.database;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.uminho.gsd.benchmarks.generic.helpers.NodeKeyGenerator;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkExecutor;
+import org.uminho.gsd.benchmarks.helpers.TPM_counter;
 import org.uminho.gsd.benchmarks.helpers.ThinkTime;
 import org.uminho.gsd.benchmarks.interfaces.executor.AbstractDatabaseExecutorFactory;
 import org.uminho.gsd.benchmarks.interfaces.executor.DatabaseExecutorInterface;
@@ -87,6 +88,7 @@ public class TPCWCassandraExecutorFactory extends AbstractDatabaseExecutorFactor
 
 
     NodeKeyGenerator keyGenerator;
+
 
 
     private Map<String, String> key_associations;
@@ -184,6 +186,8 @@ public class TPCWCassandraExecutorFactory extends AbstractDatabaseExecutorFactor
 
         System.out.println("Think Time Sample: "+ ThinkTime.getThinkTime()+","+ThinkTime.getThinkTime());
 
+		initTPMCounting();
+
     }
 
 
@@ -194,7 +198,10 @@ public class TPCWCassandraExecutorFactory extends AbstractDatabaseExecutorFactor
             keyGenerator = new NodeKeyGenerator(this.nodeID.getId());
         }
 
-        return new org.uminho.gsd.benchmarks.TPCW_Cassandra.database.TPCWCassandraExecutor(Keyspace, connections, consistencyLevel, key_associations, simulatedDelay, search_slice_ratio, keyGenerator);
+		TPM_counter tpm_counter = new TPM_counter();
+		registerCounter(tpm_counter);
+
+        return new org.uminho.gsd.benchmarks.TPCW_Cassandra.database.TPCWCassandraExecutor(Keyspace, connections, consistencyLevel, key_associations, simulatedDelay, search_slice_ratio, keyGenerator,tpm_counter);
 
     }
 }
