@@ -103,11 +103,9 @@ public class TPCWCassandraExecutorFactory extends AbstractDatabaseExecutorFactor
 
         consistencyMapping = new TreeMap<String, ConsistencyLevel>();
 
-        consistencyMapping.put("ZERO", ConsistencyLevel.ZERO);
+        consistencyMapping.put("ZERO", ConsistencyLevel.ANY);
         consistencyMapping.put("ONE", ConsistencyLevel.ONE);
         consistencyMapping.put("QUORUM", ConsistencyLevel.QUORUM);
-        consistencyMapping.put("DCQUORUM", ConsistencyLevel.DCQUORUM);
-        consistencyMapping.put("DCQUORUMSYNC", ConsistencyLevel.DCQUORUMSYNC);
         consistencyMapping.put("ALL", ConsistencyLevel.ALL);
 
         if (!conf.containsKey("ConsistencyLevels")) {
