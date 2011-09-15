@@ -33,262 +33,265 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 
-
 /**
  * Workload that generates operations to generate possible inconsistency in the database due to the lack of ACID transactions.
  */
 public class TPCWWorkloadFactory extends AbstractWorkloadGeneratorFactory {
 
-    //The items and their stock in the database
-    Map<String, Integer> items;
+	//The items and their stock in the database
+	Map<String, Integer> items;
 
-    //The item ids
-    ArrayList<String> items_ids;
+	//The item ids
+	ArrayList<String> items_ids;
 
-    //The probability distribution
-    ProbabilityDistribution distribution;
+	//The probability distribution
+	ProbabilityDistribution distribution;
 
-    //The number of clients
-    int client_number;
+	//The number of clients
+	int client_number;
 
-    //The authors names
-    List<String> author_names;
+	//The authors names
+	List<String> author_names;
 
-    //The existing titles
-    List<String> item_titles;
+	//The existing titles
+	List<String> item_titles;
 
-    /**
-     * Out of stock level*
-     */
-    int out_of_stock;
+	/**
+	 * Out of stock level*
+	 */
+	int out_of_stock;
 
-    /**
-     * Restock level*
-     */
-    int restock;
+	/**
+	 * Restock level*
+	 */
+	int restock;
 
-    /**
-     * The workload values
-     */
-    Map<String, Double> workload_values;
-
-
-    /**
-     * ResultHandler*
-     */
-    ResultHandler globalResultHandler;
-
-    /**
-     * The path to store the result file*
-     */
-    String result_path = "";
+	/**
+	 * The workload values
+	 */
+	Map<String, Double> workload_values;
 
 
-    ProgressBar progressBar;
+	/**
+	 * ResultHandler*
+	 */
+	ResultHandler globalResultHandler;
 
-    /**
-     * The generic construct that invokes the init() method.
-     *
-     * @param workload The workload file name to be fetched from the configuration files, or other place
-     */
-    public TPCWWorkloadFactory(BenchmarkExecutor executor, String workload) {
-        super(executor, workload);
-
-
-        //loading the selected distribution from file.
-        String distributionClass;
-        Map<String, String> probabilityDistributionInfo;
-        probabilityDistributionInfo = new TreeMap<String, String>();
-
-        if (!info.containsKey("ProbabilityDistributions")) {
-            System.out.println("[WARNING:] NO DISTRIBUTION INFO FOUND USING NORMAL DISTRIBUTION");
-            distributionClass = "benchmarks.interfaces.ProbabilityDistribution.PowerLawDistribution";
-            probabilityDistributionInfo.put("alpha", "0.0");
-        } else {
-            Map<String, String> distribution_info = info.get("ProbabilityDistributions");
-            if (!distribution_info.containsKey("Distribution")) {
-                distributionClass = "benchmarks.interfaces.ProbabilityDistribution.PowerLawDistribution";
-                System.out.println("[WARNING:] NO DISTRIBUTION INFO FOUND USING NORMAL DISTRIBUTION");
-                probabilityDistributionInfo.put("alpha", "0.0");
-            } else {
-                distributionClass = distribution_info.get("Distribution");
-                for (String s : distribution_info.keySet()) {
-                    probabilityDistributionInfo.put(s, distribution_info.get(s));
-                }
-            }
-        }
-
-        if (!info.containsKey("Configuration")) {
-            System.out.println("[WARNING:] NO TPCW CONFIGURATION DATA");
-            out_of_stock = 0;
-            restock = 10;
-        } else {
-            Map<String, String> conf = info.get("Configuration");
+	/**
+	 * The path to store the result file*
+	 */
+	String result_path = "";
 
 
-            if (!conf.containsKey("resultPath")) {
-                System.out.println("[INFO:] Default result path: /result ");
-                result_path = "./Results";
-            } else {
-                result_path = conf.get("resultPath");
-            }
+	ProgressBar progressBar;
 
-            if (!conf.containsKey("name")) {
-                System.out.println("[INFO:] Default name : TPCW_WORKLOAD");
-                workloadName = "TPCW_WORKLOAD";
-            } else {
-                workloadName = conf.get("name");
-            }
-
-        }
-
-        try {
-            distribution = (ProbabilityDistribution) Class.forName(distributionClass).getConstructor().newInstance();
-        } catch (InstantiationException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
-        distribution.setInfo(probabilityDistributionInfo);
+	/**
+	 * The generic construct that invokes the init() method.
+	 *
+	 * @param workload The workload file name to be fetched from the configuration files, or other place
+	 */
+	public TPCWWorkloadFactory(BenchmarkExecutor executor, String workload) {
+		super(executor, workload);
 
 
-        if (!info.containsKey("Workload") && this.Workload.isEmpty()) {
-            System.out.println("[WARNING:] NO TPCW WORKLOAD DATA");
-        } else {
-            workload_values = new TreeMap<String, Double>();
-            if (info.containsKey("Workload")) {
-                Map<String, String> conf = info.get("Configuration");
+		//loading the selected distribution from file.
+		String distributionClass;
+		Map<String, String> probabilityDistributionInfo;
+		probabilityDistributionInfo = new TreeMap<String, String>();
 
-                for (String operation : conf.keySet()) {
-                    double probability = Double.parseDouble(conf.get(operation));
-                    workload_values.put(operation, probability);
-                }
-            } else {
-                for (String operation : this.Workload.keySet()) {
-                    double probability = Double.parseDouble(this.Workload.get(operation));
-                    workload_values.put(operation, probability);
-                }
-            }
-        }
-    }
+		if (!info.containsKey("ProbabilityDistributions")) {
+			System.out.println("[WARNING:] NO DISTRIBUTION INFO FOUND USING NORMAL DISTRIBUTION");
+			distributionClass = "benchmarks.interfaces.ProbabilityDistribution.PowerLawDistribution";
+			probabilityDistributionInfo.put("alpha", "0.0");
+		} else {
+			Map<String, String> distribution_info = info.get("ProbabilityDistributions");
+			if (!distribution_info.containsKey("Distribution")) {
+				distributionClass = "benchmarks.interfaces.ProbabilityDistribution.PowerLawDistribution";
+				System.out.println("[WARNING:] NO DISTRIBUTION INFO FOUND USING NORMAL DISTRIBUTION");
+				probabilityDistributionInfo.put("alpha", "0.0");
+			} else {
+				distributionClass = distribution_info.get("Distribution");
+				for (String s : distribution_info.keySet()) {
+					probabilityDistributionInfo.put(s, distribution_info.get(s));
+				}
+			}
+		}
 
-
-    @Override
-    public void init() throws Exception {
-
-        author_names = new ArrayList<String>();
-        item_titles = new ArrayList<String>();
-
-        DatabaseExecutorInterface databaseClient = this.databaseFactory.getDatabaseClient();
-
-        List<String> fields = new ArrayList<String>();
-        fields.add("A_LNAME");
-        Map<String, Map<String, Object>> authorNames = databaseClient.rangeQuery("author", fields, -1);
-
-        for (Map<String, Object> author_name : authorNames.values()) {
-            author_names.add((String) author_name.get("A_LNAME"));
-        }
-
-        System.out.println("[INFO:] AUTHORS:" + authorNames.size());
-
-        fields.clear();
-        fields.add("I_TITLE");
-
-        Map<String, Map<String, Object>> itemNames = databaseClient.rangeQuery("item", fields, -1);
-
-        for (Map<String, Object> item : itemNames.values()) {
-            item_titles.add((String) item.get("I_TITLE"));
-        }
-        System.out.println("[INFO:] ITEMS:" + item_titles.size());
-
-        this.distribution.init(item_titles.size()-1,null);
-                
-        progressBar = new ProgressBar(executor.num_clients, executor.num_operations);
-
-        globalResultHandler = new ResultHandler(workloadName, -1);
-        Map<String,String> info =  new LinkedHashMap<String, String>();
-
-        info.put("Workload class:",TPCWWorkloadFactory.class.getName());
-        info.put("Workload conf:",workloadName);
-        info.put("Workload values:",workload_values.toString());
-        info.put("Database Executor",databaseFactory.getClass().getName());
-        info.put("Database engine conf:",databaseClient.getInfo().toString());
-        info.put("----","----");
-        String think_time  =(BenchmarkMain.distribution_factor == -1) ? "tpcw think time" : "user set: "+BenchmarkMain.distribution_factor ;
-        info.put("Think time", think_time);
-        info.put("Client num",executor.num_clients+"");
-        info.put("Operation num",executor.num_operations+"");
-        info.put("Distribution",distribution.getName());
-        info.put("Distribution conf",distribution.getInfo().toString());
-        info.put("----","----");
-
-        GregorianCalendar date = new GregorianCalendar();
-        String data_string = date.get(GregorianCalendar.YEAR) + "\\" + (date.get(GregorianCalendar.MONTH)+1) + "\\" + date.get(GregorianCalendar.DAY_OF_MONTH) + " -- " + date.get(GregorianCalendar.HOUR_OF_DAY) + ":" + date.get(GregorianCalendar.MINUTE) + "";
-        info.put("Start",data_string);
-
-        globalResultHandler.setBechmark_info(info);
-    }
-
-    @Override
-    public WorkloadGeneratorInterface getClient() {
-        if (client_number == 0) {
-            progressBar.printProcess(1500);
-        }
+		if (!info.containsKey("Configuration")) {
+			System.out.println("[WARNING:] NO TPCW CONFIGURATION DATA");
+			out_of_stock = 0;
+			restock = 10;
+		} else {
+			Map<String, String> conf = info.get("Configuration");
 
 
-        TPCWWorkloadGeneration client = new TPCWWorkloadGeneration(globalResultHandler,item_titles, author_names, workload_values, distribution, this.nodeID, client_number, progressBar);
-        client_number++;
-        return client;
+			if (!conf.containsKey("resultPath")) {
+				System.out.println("[INFO:] Default result path: /result ");
+				result_path = "./Results";
+			} else {
+				result_path = conf.get("resultPath");
+			}
 
-    }
+			if (!conf.containsKey("name")) {
+				System.out.println("[INFO:] Default name : TPCW_WORKLOAD");
+				workloadName = "TPCW_WORKLOAD";
+			} else {
+				workloadName = conf.get("name");
+			}
 
-    @Override
-    public void finishExecution(List<ResultHandler> collected_results) {
+		}
 
-        int bought_qty = 0;
-        int buying_actions = 0;
-        int bought_carts = 0;
-        int zeros = 0;
-
-        for (ResultHandler client : collected_results) {
-            globalResultHandler.addResults(client);
-
-            bought_qty += (Integer) client.getResulSet().get("total_bought");
-            buying_actions += (Integer) client.getResulSet().get("buying_actions");
-            bought_carts += (Integer) client.getResulSet().get("bought_carts");
-            zeros += (Integer) client.getResulSet().get("zeros");
-        }
-
-        System.out.println("[INFO:] TOTAL BOUGHT: " + bought_qty);
-        System.out.println("[INFO:] BUYING ACTIONS: " + buying_actions);
-        System.out.println("[INFO:] BOUGHT CARTS: " + bought_carts);
-        System.out.println("[INFO:] ZERO STOCK SELLS: " + zeros);
-        System.out.println("[INFO:] WRITING RESULTS");
-
-    }
-
-    @Override
-    public void consolidate() {
-
-        if (!nodeID.isMaster()) {
-            BenchmarkSlave.terminated = true;
-        }
+		try {
+			distribution = (ProbabilityDistribution) Class.forName(distributionClass).getConstructor().newInstance();
+		} catch (InstantiationException e) {
+			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+		} catch (InvocationTargetException e) {
+			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+		} catch (NoSuchMethodException e) {
+			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+		}
+		distribution.setInfo(probabilityDistributionInfo);
 
 
-        GregorianCalendar date = new GregorianCalendar();
-        String data_string = date.get(GregorianCalendar.YEAR) + "\\" + (date.get(GregorianCalendar.MONTH)+1) + "\\" + date.get(GregorianCalendar.DAY_OF_MONTH) + " -- " + date.get(GregorianCalendar.HOUR_OF_DAY) + ":" + date.get(GregorianCalendar.MINUTE) + "";
-        globalResultHandler.getBechmark_info().put("End",data_string);
+		if (!info.containsKey("Workload") && this.Workload.isEmpty()) {
+			System.out.println("[WARNING:] NO TPCW WORKLOAD DATA");
+		} else {
+			workload_values = new TreeMap<String, Double>();
+			if (info.containsKey("Workload")) {
+				Map<String, String> conf = info.get("Configuration");
+
+				for (String operation : conf.keySet()) {
+					double probability = Double.parseDouble(conf.get(operation));
+					workload_values.put(operation, probability);
+				}
+			} else {
+				for (String operation : this.Workload.keySet()) {
+					double probability = Double.parseDouble(this.Workload.get(operation));
+					workload_values.put(operation, probability);
+				}
+			}
+		}
+	}
 
 
-        globalResultHandler.listDataToSOutput();
-        globalResultHandler.listDatatoFiles(result_path, "", true);
-    }
+	@Override
+	public void init() throws Exception {
+
+		author_names = new ArrayList<String>();
+		item_titles = new ArrayList<String>();
+
+		DatabaseExecutorInterface databaseClient = this.databaseFactory.getDatabaseClient();
+
+		List<String> fields = new ArrayList<String>();
+		fields.add("A_LNAME");
+		Map<String, Map<String, Object>> authorNames = databaseClient.rangeQuery("author", fields, -1);
+
+		for (Map<String, Object> author_name : authorNames.values()) {
+			author_names.add((String) author_name.get("A_LNAME"));
+		}
+
+		System.out.println("[INFO:] AUTHORS:" + authorNames.size());
+
+		fields.clear();
+		fields.add("I_TITLE");
+
+		Map<String, Map<String, Object>> itemNames = databaseClient.rangeQuery("item", fields, -1);
+
+		for (Map<String, Object> item : itemNames.values()) {
+			item_titles.add((String) item.get("I_TITLE"));
+		}
+		System.out.println("[INFO:] ITEMS:" + item_titles.size());
+
+		this.distribution.init(item_titles.size() - 1, null);
+
+		progressBar = new ProgressBar(executor.num_clients, executor.num_operations);
+
+		globalResultHandler = new ResultHandler(workloadName, -1);
+		Map<String, String> info = new LinkedHashMap<String, String>();
+
+		info.put("Workload class:", TPCWWorkloadFactory.class.getName());
+		info.put("Workload conf:", workloadName);
+		info.put("Workload values:", workload_values.toString());
+		info.put("Database Executor", databaseFactory.getClass().getName());
+		info.put("Database engine conf:", databaseClient.getInfo().toString());
+		info.put("----", "----");
+		String think_time = (BenchmarkMain.distribution_factor == -1) ? "tpcw think time" : "user set: " + BenchmarkMain.distribution_factor;
+		info.put("Think time", think_time);
+		info.put("Client num", executor.num_clients + "");
+		info.put("Operation num", executor.num_operations + "");
+		info.put("Distribution", distribution.getName());
+		info.put("Distribution conf", distribution.getInfo().toString());
+		info.put("----", "----");
+
+		GregorianCalendar date = new GregorianCalendar();
+		String data_string = date.get(GregorianCalendar.YEAR) + "\\" + (date.get(GregorianCalendar.MONTH) + 1) + "\\" + date.get(GregorianCalendar.DAY_OF_MONTH) + " -- " + date.get(GregorianCalendar.HOUR_OF_DAY) + ":" + date.get(GregorianCalendar.MINUTE) + "";
+		info.put("Start", data_string);
+
+		globalResultHandler.setBechmark_info(info);
+	}
+
+	@Override
+	public WorkloadGeneratorInterface getClient() {
+		if (client_number == 0) {
+			progressBar.printProcess(1500);
+		}
+
+
+		TPCWWorkloadGeneration client = new TPCWWorkloadGeneration(globalResultHandler, item_titles, author_names, workload_values, distribution, this.nodeID, client_number, progressBar);
+		client_number++;
+		return client;
+
+	}
+
+	@Override
+	public void finishExecution(List<ResultHandler> collected_results) {
+
+		int bought_qty = 0;
+		int buying_actions = 0;
+		int bought_carts = 0;
+		int zeros = 0;
+
+		for (ResultHandler client : collected_results) {
+			globalResultHandler.addResults(client);
+
+			HashMap<String, Object> map = client.getResulSet();
+			if (!map.isEmpty()) {
+
+				bought_qty += (Integer) client.getResulSet().get("total_bought");
+				buying_actions += (Integer) client.getResulSet().get("buying_actions");
+				bought_carts += (Integer) client.getResulSet().get("bought_carts");
+				zeros += (Integer) client.getResulSet().get("zeros");
+			}
+		}
+
+		System.out.println("[INFO:] TOTAL BOUGHT: " + bought_qty);
+		System.out.println("[INFO:] BUYING ACTIONS: " + buying_actions);
+		System.out.println("[INFO:] BOUGHT CARTS: " + bought_carts);
+//		System.out.println("[INFO:] ZERO STOCK SELLS: " + zeros);
+		System.out.println("[INFO:] WRITING RESULTS");
+
+	}
+
+	@Override
+	public void consolidate() {
+
+		if (!nodeID.isMaster()) {
+			BenchmarkSlave.terminated = true;
+		}
+
+
+		GregorianCalendar date = new GregorianCalendar();
+		String data_string = date.get(GregorianCalendar.YEAR) + "\\" + (date.get(GregorianCalendar.MONTH) + 1) + "\\" + date.get(GregorianCalendar.DAY_OF_MONTH) + " -- " + date.get(GregorianCalendar.HOUR_OF_DAY) + ":" + date.get(GregorianCalendar.MINUTE) + "";
+		globalResultHandler.getBechmark_info().put("End", data_string);
+
+
+		globalResultHandler.listDataToSOutput();
+		globalResultHandler.listDatatoFiles(result_path, "", true);
+	}
 
 }
 
