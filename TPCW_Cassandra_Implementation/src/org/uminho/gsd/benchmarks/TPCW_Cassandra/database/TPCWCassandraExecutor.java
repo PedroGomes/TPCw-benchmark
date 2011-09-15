@@ -790,9 +790,10 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		if (query_result != null) {
 			for (ByteBuffer key_byte : query_result.keySet()) {
 
+				List<ColumnOrSuperColumn> retrieved_columns = query_result.get(key_byte);
+				String key = charset.decode(key_byte).toString();
 
-				for (ColumnOrSuperColumn c : query_result.get(key_byte)) {
-					String key = charset.decode(key_byte).toString();
+				for (ColumnOrSuperColumn c : retrieved_columns) {
 					if (c.isSetSuper_column()) {
 
 
