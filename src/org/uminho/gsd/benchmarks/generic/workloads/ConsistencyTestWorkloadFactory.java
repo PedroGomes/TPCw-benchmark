@@ -358,7 +358,7 @@ public class ConsistencyTestWorkloadFactory extends AbstractWorkloadGeneratorFac
 		System.out.println("[INFO:] TOTAL BOUGHT: " + bought_qty);
 		System.out.println("[INFO:] BUYING ACTIONS: " + buying_actions);
 		System.out.println("[INFO:] BOUGHT CARTS: " + bought_carts);
-		System.out.println("[INFO:] ZERO STOCK SELLS: " + zeros);
+//		System.out.println("[INFO:] ZERO STOCK SELLS: " + zeros);
 		System.out.println("[INFO:] WRITING RESULTS TO THE DATABASE");
 
 		DatabaseExecutorInterface database_client = this.databaseFactory.getDatabaseClient();
