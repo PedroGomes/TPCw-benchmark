@@ -121,7 +121,7 @@ public class TPCW_MySQL_Factory extends AbstractDatabaseExecutorFactory {
         }
 
 
-		initTMPCounting();
+		initTPMCounting();
 
     }
 

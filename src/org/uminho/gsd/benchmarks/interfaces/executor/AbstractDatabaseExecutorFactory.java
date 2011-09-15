@@ -165,7 +165,7 @@ public abstract class AbstractDatabaseExecutorFactory {
 	}
 
 
-	public void initTMPCounting() {
+	public void initTPMCounting() {
 		do_tmp_counting = true;
 	}
 
