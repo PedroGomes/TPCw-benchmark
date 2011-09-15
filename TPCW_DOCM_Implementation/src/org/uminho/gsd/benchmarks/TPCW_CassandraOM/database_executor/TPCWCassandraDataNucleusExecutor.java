@@ -24,6 +24,7 @@ import org.uminho.gsd.benchmarks.TPCW_CassandraOM.entities.*;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkNodeID;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.helpers.BenchmarkUtil;
+import org.uminho.gsd.benchmarks.helpers.TPM_counter;
 import org.uminho.gsd.benchmarks.helpers.ThinkTime;
 import org.uminho.gsd.benchmarks.interfaces.Entity;
 import org.uminho.gsd.benchmarks.interfaces.KeyGenerator;
@@ -89,6 +90,9 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
     Random random;
 
+	private TPM_counter counter;
+
+
     static {
 //        System.out.println("PersistenceManager initialized");
         pmf = JDOHelper.getPersistenceManagerFactory("datanucleus.properties");
@@ -103,10 +107,12 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
     }
 
 
-    public TPCWCassandraDataNucleusExecutor(KeyGenerator keyGenerator) {
+    public TPCWCassandraDataNucleusExecutor(KeyGenerator keyGenerator,TPM_counter tpm_counter) {
 
         this.keyGenerator = keyGenerator;
         random = new Random();
+		this.counter = tpm_counter;
+
         //    pmf = JDOHelper.getPersistenceManagerFactory("Test");
     }
 
@@ -130,10 +136,14 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
                 Operation op = workload.getNextOperation();
                 execute(op);
                 long end_time = System.currentTimeMillis();
+				counter.increment();
 
-                if (end_time - init_time > 10000) {
-                    System.out.println("OP: " + op.getOperation() + "over 10000");
-                }
+
+//
+//                if (end_time - init_time > 10000) {
+//                    System.out.println("OP: " + op.getOperation() + "over 10000");
+//                }
+
 
                 simulatedDelay = ThinkTime.getThinkTime();
 

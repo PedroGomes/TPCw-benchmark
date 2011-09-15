@@ -22,6 +22,7 @@ package org.uminho.gsd.benchmarks.TPCW_CassandraOM.database_executor;
 
 import org.uminho.gsd.benchmarks.generic.helpers.NodeKeyGenerator;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkExecutor;
+import org.uminho.gsd.benchmarks.helpers.TPM_counter;
 import org.uminho.gsd.benchmarks.interfaces.KeyGenerator;
 import org.uminho.gsd.benchmarks.interfaces.executor.AbstractDatabaseExecutorFactory;
 import org.uminho.gsd.benchmarks.interfaces.executor.DatabaseExecutorInterface;
@@ -43,6 +44,8 @@ public class TPCWCassandraDatanucleusExecutorFactory extends AbstractDatabaseExe
 
     private void init() {
 
+		initTPMCounting();
+
     }
 
     @Override
@@ -52,7 +55,10 @@ public class TPCWCassandraDatanucleusExecutorFactory extends AbstractDatabaseExe
             keyGenerator = new NodeKeyGenerator(this.nodeID.getId());
         }
 
-        return new TPCWCassandraDataNucleusExecutor(keyGenerator);
+		TPM_counter tpm_counter = new TPM_counter();
+		registerCounter(tpm_counter);
+
+        return new TPCWCassandraDataNucleusExecutor(keyGenerator,tpm_counter);
 
     }
 }
