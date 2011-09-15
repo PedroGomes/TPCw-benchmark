@@ -164,16 +164,16 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
 
 
 		List<Map<String, String>> column_families = new ArrayList<Map<String, String>>();
-		Map<String, String> column_family = new TreeMap<String, String>();
 
+		Map<String, String> column_family = new TreeMap<String, String>();
 		column_family.put("name", "customer");
 		column_family.put("comparator", "UTF8Type");
 		column_families.add(column_family);
 
+		column_family = new TreeMap<String, String>();
 		column_family.put("name", "item");
 		column_family.put("comparator", "BytesType");
 		column_families.add(column_family);
-
 
 		column_family = new TreeMap<String, String>();
 		column_family.put("name", "orders");
@@ -189,14 +189,17 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
 		column_family.put("sub_comparator", "BytesType");
 		column_families.add(column_family);
 
+		column_family = new TreeMap<String, String>();
 		column_family.put("name", "country");
 		column_family.put("comparator", "BytesType");
 		column_families.add(column_family);
 
+		column_family = new TreeMap<String, String>();
 		column_family.put("name", "address");
 		column_family.put("comparator", "BytesType");
 		column_families.add(column_family);
 
+		column_family = new TreeMap<String, String>();
 		column_family.put("name", "author");
 		column_family.put("comparator", "BytesType");
 		column_families.add(column_family);
