@@ -1,10 +1,10 @@
 # Purpose:
-A benchmarking platform to compare the different database approaches. Based on the <a href="http://www.tpc.org/tpcw/">TPC-W</a> specification it allows to compare the latency between diferent implementations. 
+A benchmarking platform to compare the different database approaches. Based on the <a href="http://www.tpc.org/tpcw/">TPC-W</a> specification it allows to compare the latency between different implementations. 
 
 # About: 
-Implementing all the database operations on the TPCw (11 of the 14 original) this platform includes a <a href="http://cassandra.apache.org/">Cassandra</a>, <a href="http://www.mysql.com/">MySQL</a> and <a href="https://github.com/PedroGomes/datanucleus-cassandra">Datanucleus Cassandra</a> functional ports of that specification. 
+Implementing the operations that interact with the database on the TPC-W benchmark (11 of the 14 original) this platform includes a <a href="http://cassandra.apache.org/">Cassandra</a>, <a href="http://www.mysql.com/">MySQL</a> and <a href="https://github.com/PedroGomes/datanucleus-cassandra">Datanucleus Cassandra</a> functional ports of that specification. 
 
-A basic consistency workload is also available that allows the user to mesure the efects of no ACID garanties.   
+A basic consistency workload is also available that allows the user to measure the effects of no ACID guaranties.   
 
 # Build: 
 
@@ -69,7 +69,6 @@ This database allows the use of different populating classes, database executing
 - Based on TPCW v1.8
 - Cassandra support only for 0.6, but the code is easy to change if needed.  
 - The population process started in a generic form and for that reason the Cassandra populator reads what fields it should use to create super columns; maybe this doesn't make sense anymore.
-- Bad use of log4j.
 - One of the problems in the MySQL benchmark is the client side generation of ids. Avoiding the overhead of transactions or auto increment (synchronization mechanisms as seen in other implementations are not suitable with the multi node mode) some of the queries may have minor changes due to their ids. 
 - On consistency workload the stock of items is usually a high number to ease the analyze of the data, on normal TPCW workloads the stock is updated when the coded minimum is reached as supposed, but in Cassandra no guaranties are made about the outcome of that process.   
 
