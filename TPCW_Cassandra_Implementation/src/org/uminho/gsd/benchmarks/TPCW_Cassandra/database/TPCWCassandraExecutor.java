@@ -47,7 +47,6 @@ import java.nio.charset.Charset;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -829,6 +828,9 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 		return results;
 	}
+
+
+
 
 	public Map<String, Map<String, Object>> rangeQuery(String column_family, List<String> fields, int limit) throws Exception {
 
@@ -2638,7 +2640,8 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		//	System.out.println("retreived best sellers = " + orders.size());
 
 		Map<Integer, Integer> items_info = new TreeMap<Integer, Integer>();
-		CopyOnWriteArrayList<String> item_keys = new CopyOnWriteArrayList<String>();
+
+		HashSet<String> item_keys = new HashSet<String>();
 		Map<Integer, Integer> valid_items = new TreeMap<Integer, Integer>();
 
 
@@ -2650,7 +2653,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 					Map<String, Object> columns = order_line.getValue();
 					int item_id = (Integer) columns.get("OL_I_ID");
 					int item_qty = (Integer) columns.get("OL_QTY");
-					item_keys.addIfAbsent(item_id + "");
+					item_keys.add(item_id + "");
 
 					if (items_info.containsKey(item_id)) {
 						int current_qty = items_info.get(item_id);
@@ -2667,7 +2670,13 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		columns_to_retrieve_item.add("I_SUBJECT");
 		columns_to_retrieve_item.add("I_A_ID");
 
-		Map<String, Map<String, Object>> items = multiget("item", item_keys, columns_to_retrieve_item);
+
+		List<String> final_keys = new ArrayList<String>(item_keys.size());
+		for (String item_key : item_keys) {
+			final_keys.add(item_key);
+		}
+
+		Map<String, Map<String, Object>> items = multiget("item", final_keys, columns_to_retrieve_item);
 		for (Map.Entry<String, Map<String, Object>> entry : items.entrySet()) {
 			int id = Integer.parseInt(entry.getKey());
 			String subject = (String) entry.getValue().get("I_SUBJECT");
