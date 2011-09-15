@@ -162,6 +162,102 @@ public class CassandraPopulator extends AbstractBenchmarkPopulator {
 
 	public boolean populate() {
 
+
+		List<Map<String, String>> column_families = new ArrayList<Map<String, String>>();
+		Map<String, String> column_family = new TreeMap<String, String>();
+
+		column_family.put("name", "customer");
+		column_family.put("comparator", "UTF8Type");
+		column_families.add(column_family);
+
+		column_family.put("name", "item");
+		column_family.put("comparator", "BytesType");
+		column_families.add(column_family);
+
+
+		column_family = new TreeMap<String, String>();
+		column_family.put("name", "orders");
+		column_family.put("type","Super");
+		column_family.put("comparator", "BytesType");
+		column_family.put("sub_comparator", "BytesType");
+		column_families.add(column_family);
+
+		column_family = new TreeMap<String, String>();
+		column_family.put("name", "order_line");
+		column_family.put("type","Super");
+		column_family.put("comparator", "BytesType");
+		column_family.put("sub_comparator", "BytesType");
+		column_families.add(column_family);
+
+		column_family.put("name", "country");
+		column_family.put("comparator", "BytesType");
+		column_families.add(column_family);
+
+		column_family.put("name", "address");
+		column_family.put("comparator", "BytesType");
+		column_families.add(column_family);
+
+		column_family.put("name", "author");
+		column_family.put("comparator", "BytesType");
+		column_families.add(column_family);
+
+		column_family = new TreeMap<String, String>();
+		column_family.put("name", "cc_xacts");
+		column_family.put("type","Super");
+		column_family.put("comparator", "BytesType");
+		column_family.put("sub_comparator", "UTF8Type");
+		column_families.add(column_family);
+
+		column_family = new TreeMap<String, String>();
+		column_family.put("name", "shopping_cart_line");
+		column_family.put("type","Super");
+		column_family.put("comparator", "BytesType");
+		column_family.put("sub_comparator", "BytesType");
+		column_families.add(column_family);
+
+		column_family = new TreeMap<String, String>();
+		column_family.put("name", "shopping_cart");
+		column_family.put("type","Super");
+		column_family.put("comparator", "BytesType");
+		column_family.put("sub_comparator", "BytesType");
+		column_families.add(column_family);
+
+		column_family = new TreeMap<String, String>();
+		column_family.put("name", "results");
+		column_family.put("type","Super");
+		column_family.put("comparator", "BytesType");
+		column_family.put("sub_comparator", "BytesType");
+		column_families.add(column_family);
+
+		column_family = new TreeMap<String, String>();
+		column_family.put("name", "item_subject_index");
+		column_family.put("type","Super");
+		column_family.put("comparator", "BytesType");
+		column_family.put("sub_comparator", "BytesType");
+		column_families.add(column_family);
+
+		column_family = new TreeMap<String, String>();
+		column_family.put("name", "item_title_index");
+		column_family.put("type","Super");
+		column_family.put("comparator", "BytesType");
+		column_family.put("sub_comparator", "BytesType");
+		column_families.add(column_family);
+
+		column_family = new TreeMap<String, String>();
+		column_family.put("name", "item_author_index");
+		column_family.put("type","Super");
+		column_family.put("comparator", "BytesType");
+		column_family.put("sub_comparator", "BytesType");
+		column_families.add(column_family);
+
+		TPCWCassandraExecutor client = (TPCWCassandraExecutor) databaseClientFactory.getDatabaseClient();
+		try {
+			client.setSchema(column_families);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+
 		delay_time = 10000;
 		if (error) {
 			return false;

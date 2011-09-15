@@ -27,6 +27,7 @@ import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransportException;
 import org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.*;
+import org.uminho.gsd.benchmarks.TPCW_Cassandra.populator.SchemaUtils;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkNodeID;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
 import org.uminho.gsd.benchmarks.generic.BuyingResult;
@@ -259,6 +260,13 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		simulatedDelay = think_time;
 
 	}
+
+	public void setSchema(List<Map<String, String>> column_families) throws Exception {
+		SchemaUtils.createSchema(keyspace,column_families,clients);
+
+
+	}
+
 
 	public Cassandra.Client getCassandraClient() throws UnavailableException {
 
