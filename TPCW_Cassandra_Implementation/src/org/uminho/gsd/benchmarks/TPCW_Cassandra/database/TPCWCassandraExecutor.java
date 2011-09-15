@@ -22,7 +22,6 @@ package org.uminho.gsd.benchmarks.TPCW_Cassandra.database;
 
 import org.apache.cassandra.thrift.*;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
@@ -225,18 +224,17 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 				transport.open();
 				protocol = new org.apache.thrift.protocol.TBinaryProtocol(transport);
 				client = new Cassandra.Client(protocol);
-
 				clients.add(client);
 				client.set_keyspace(keyspace);
 
 			} catch (TTransportException ex) {
 				System.out.println("[ERROR] FAILED TO CONNECT TO:" + host + ":port:" + connections.get(host) + " -> CLIENT IGNORED ");
-				//Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
 			} catch (TException e) {
-				e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+				e.printStackTrace();
 			} catch (InvalidRequestException e) {
 				e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
 			}
+
 
 		}
 
@@ -257,13 +255,13 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			}
 
 		} catch (NotFoundException e) {
-			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+			e.printStackTrace();
 		} catch (TException e) {
-			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+			e.printStackTrace();
 		} catch (UnavailableException e) {
-			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+			e.printStackTrace();
 		} catch (InvalidRequestException e) {
-			e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+			e.printStackTrace();
 		}
 
 		search_slice_ratio = search_slices;
@@ -634,7 +632,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			Column column_to_insert = null;
 
 			column_to_insert = new Column();
-			column_to_insert.setName(valueName.getBytes());
+			column_to_insert.setName(valueName.getBytes("UTF-8"));
 			column_to_insert.setValue(BenchmarkUtil.getBytes(fieldsToInsert.get(valueName)));
 			column_to_insert.setTimestamp(System.currentTimeMillis());
 
@@ -677,7 +675,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 				//column_to_insert = new Column(valueName.getBytes(), BenchmarkUtil.getBytes(fieldsToInsert.get(valueName)), System.currentTimeMillis());
 				column_to_insert = new Column();
-				column_to_insert.setName(valueName.getBytes());
+				column_to_insert.setName(valueName.getBytes("UTF-8"));
 				column_to_insert.setValue(BenchmarkUtil.getBytes(fieldsToInsert.get(valueName)));
 				column_to_insert.setTimestamp(System.currentTimeMillis());
 
@@ -705,10 +703,10 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 			ColumnFamilyKey = key;
 			for (String valueName : fieldsToInsert.keySet()) {
-				//Column column = new Column(valueName.getBytes(), BenchmarkUtil.getBytes(fieldsToInsert.get(valueName)), System.currentTimeMillis());
+				//Column column = new Column(valueName.getBytes(), BenchmarkUtil.getBytes("UTF-8"fieldsToInsert.get(valueName)), System.currentTimeMillis());
 
 				Column column = new Column();
-				column.setName(valueName.getBytes());
+				column.setName(valueName.getBytes("UTF-8"));
 				column.setValue(BenchmarkUtil.getBytes(fieldsToInsert.get(valueName)));
 				column.setTimestamp(System.currentTimeMillis());
 
@@ -764,7 +762,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			//, "".getBytes(), false, 2000
 			SliceRange range = new SliceRange();
 			range.setStart("".getBytes());
-			range.setFinish("".getBytes());
+			range.setFinish("".getBytes("UTF-8"));
 			range.setReversed(false);
 			predicate.setSlice_range(range);
 		} else {
@@ -772,7 +770,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			List<ByteBuffer> field_names = new ArrayList<ByteBuffer>();
 			for (String field : fields) {
 
-				field_names.add(ByteBuffer.wrap(field.getBytes()));
+				field_names.add(ByteBuffer.wrap(field.getBytes("UTF-8")));
 			}
 			predicate.setColumn_names(field_names);
 		}
@@ -780,7 +778,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 		List<java.nio.ByteBuffer> keys_bytes = new ArrayList<ByteBuffer>(keys.size());
 		for (String key : keys) {
-			keys_bytes.add(ByteBuffer.wrap(key.getBytes()));
+			keys_bytes.add(ByteBuffer.wrap(key.getBytes("UTF-8")));
 		}
 
 
@@ -801,7 +799,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 						String super_key = new String(c.super_column.getName(), "UTF-8");
 						Map<String, Object> supercolumns = new TreeMap<String, Object>();
 						for (Column co : c.getSuper_column().columns) {
-							supercolumns.put(new String(co.getName()), BenchmarkUtil.toObject(co.getValue()));
+							supercolumns.put(new String(co.getName(), "UTF-8"), BenchmarkUtil.toObject(co.getValue()));
 						}
 
 						if (!results.containsKey(key)) {
@@ -816,10 +814,10 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 						if (!results.containsKey(key)) {
 							Map<String, Object> returned_fields = new TreeMap<String, Object>();
-							returned_fields.put(new String(c.getColumn().getName()), BenchmarkUtil.toObject(c.getColumn().getValue()));
+							returned_fields.put(new String(c.getColumn().getName(), "UTF-8"), BenchmarkUtil.toObject(c.getColumn().getValue()));
 							results.put(key, returned_fields);
 						} else {
-							results.get(key).put(new String(c.getColumn().getName()), BenchmarkUtil.toObject(c.getColumn().getValue()));
+							results.get(key).put(new String(c.getColumn().getName(), "UTF-8"), BenchmarkUtil.toObject(c.getColumn().getValue()));
 						}
 					}
 				}
@@ -846,8 +844,8 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 				//SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 2000);
 
 				SliceRange range = new SliceRange();
-				range.setStart("".getBytes());
-				range.setFinish("".getBytes());
+				range.setStart("".getBytes("UTF-8"));
+				range.setFinish("".getBytes("UTF-8"));
 				range.setReversed(false);
 
 				predicate.setSlice_range(range);
@@ -857,7 +855,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 				List<ByteBuffer> field_names = new ArrayList<ByteBuffer>();
 				for (String field : fields) {
 
-					field_names.add(ByteBuffer.wrap(field.getBytes()));
+					field_names.add(ByteBuffer.wrap(field.getBytes("UTF-8")));
 				}
 				predicate.setColumn_names(field_names);
 
@@ -866,15 +864,15 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 
 			KeyRange range = new KeyRange();
-			range.setStart_key("".getBytes());
-			range.setEnd_key("".getBytes());
+			range.setStart_key("".getBytes("UTF-8"));
+			range.setEnd_key("".getBytes("UTF-8"));
 			range.setCount(search_slice_ratio);
 
 			ColumnParent parent = new ColumnParent();
 			parent.setColumn_family(column_family);
 
 
-			byte[] last_key = "".getBytes();
+			byte[] last_key = "".getBytes("UTF-8");
 
 			boolean terminated = false;
 			limit = (limit < 0) ? -1 : limit;
@@ -902,20 +900,20 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 								for (Column co : c.getSuper_column().columns) {
 									if (!results.containsKey(key.key)) {
 										Map<String, Object> returned_fields = new TreeMap<String, Object>();
-										returned_fields.put(new String(co.getName()), BenchmarkUtil.toObject(co.getValue()));
+										returned_fields.put(new String(co.getName(), "UTF-8"), BenchmarkUtil.toObject(co.getValue()));
 										results.put(new String(key.getKey(), "UTF-8"), returned_fields);
 									} else {
-										results.get(key.key).put(new String(co.getName()), BenchmarkUtil.toObject(co.getValue()));
+										results.get(key.key).put(new String(co.getName(), "UTF-8"), BenchmarkUtil.toObject(co.getValue()));
 									}
 								}
 							} else {
 
 								if (!results.containsKey(key.key)) {
 									Map<String, Object> returned_fields = new TreeMap<String, Object>();
-									returned_fields.put(new String(c.getColumn().getName()), BenchmarkUtil.toObject(c.getColumn().getValue()));
+									returned_fields.put(new String(c.getColumn().getName(), "UTF-8"), BenchmarkUtil.toObject(c.getColumn().getValue()));
 									results.put(new String(key.getKey(), "UTF-8"), returned_fields);
 								} else {
-									results.get(key.key).put(new String(c.getColumn().getName()), BenchmarkUtil.toObject(c.getColumn().getValue()));
+									results.get(key.key).put(new String(c.getColumn().getName(), "UTF-8"), BenchmarkUtil.toObject(c.getColumn().getValue()));
 								}
 							}
 						}
@@ -955,20 +953,20 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 
 			List<ByteBuffer> key_field_name = new ArrayList<ByteBuffer>();
-			key_field_name.add(ByteBuffer.wrap(key_name.getBytes()));
+			key_field_name.add(ByteBuffer.wrap(key_name.getBytes("UTF-8")));
 			key_predicate.setColumn_names(key_field_name);
 
 
 			KeyRange range = new KeyRange();
-			range.setStart_key("".getBytes());
-			range.setEnd_key("".getBytes());
+			range.setStart_key("".getBytes("UTF-8"));
+			range.setEnd_key("".getBytes("UTF-8"));
 			range.setCount(search_slice_ratio);
 
 			ColumnParent parent = new ColumnParent();
 			parent.setColumn_family(column_family);
 
 
-			byte[] last_key = "".getBytes();
+			byte[] last_key = "".getBytes("UTF-8");
 
 			boolean terminated = false;
 			limit = (limit < 0) ? -1 : limit;
@@ -1038,8 +1036,8 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			if (fields == null) {
 
 				SliceRange range = new SliceRange();
-				range.setStart("".getBytes());
-				range.setFinish("".getBytes());
+				range.setStart("".getBytes("UTF-8"));
+				range.setFinish("".getBytes("UTF-8"));
 				range.setReversed(false);
 
 				predicate.setSlice_range(range);
@@ -1049,7 +1047,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 				List<ByteBuffer> field_names = new ArrayList<ByteBuffer>();
 				for (String field : fields) {
 
-					field_names.add(ByteBuffer.wrap(field.getBytes()));
+					field_names.add(ByteBuffer.wrap(field.getBytes("UTF-8")));
 				}
 				predicate.setColumn_names(field_names);
 
@@ -1058,15 +1056,15 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 
 			KeyRange range = new KeyRange();
-			range.setStart_key("".getBytes());
-			range.setEnd_key("".getBytes());
+			range.setStart_key("".getBytes("UTF-8"));
+			range.setEnd_key("".getBytes("UTF-8"));
 			range.setCount(search_slice_ratio);
 
 			ColumnParent parent = new ColumnParent();
 			parent.setColumn_family(column_family);
 
 
-			byte[] last_key = "".getBytes();
+			byte[] last_key = "".getBytes("UTF-8");
 
 			boolean terminated = false;
 			limit = (limit < 0) ? -1 : limit;
@@ -1096,11 +1094,11 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 									Map<String, Object> columns = new TreeMap<String, Object>();
 
 									for (Column co : c.getSuper_column().columns) {
-										String column_name = new String(co.getName());
+										String column_name = new String(co.getName(), "UTF-8");
 										Object value = BenchmarkUtil.toObject(co.getValue());
 										columns.put(column_name, value);
 									}
-									String super_key = new String(c.getSuper_column().getName());
+									String super_key = new String(c.getSuper_column().getName(), "UTF-8");
 									returned_fields.put(super_key, columns);
 								}
 							}
@@ -1141,20 +1139,20 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 
 			List<ByteBuffer> key_field_name = new ArrayList<ByteBuffer>();
-			key_field_name.add(ByteBuffer.wrap(key_name.getBytes()));
+			key_field_name.add(ByteBuffer.wrap(key_name.getBytes("UTF-8")));
 			key_predicate.setColumn_names(key_field_name);
 
 
 			KeyRange range = new KeyRange();
-			range.setStart_key("".getBytes());
-			range.setEnd_key("".getBytes());
+			range.setStart_key("".getBytes("UTF-8"));
+			range.setEnd_key("".getBytes("UTF-8"));
 			range.setCount(search_slice_ratio);
 
 			ColumnParent parent = new ColumnParent();
 			parent.setColumn_family(column_family);
 
 
-			byte[] last_key = "".getBytes();
+			byte[] last_key = "".getBytes("UTF-8");
 
 			boolean terminated = false;
 			limit = (limit < 0) ? -1 : limit;
@@ -1217,7 +1215,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		//ColumnPath path = new ColumnPath(column, null, null);
 		ColumnPath path = new ColumnPath();
 		path.setColumn_family(columnFamily);
-		path.setColumn(column.getBytes());
+		path.setColumn(column.getBytes("UTF-8"));
 
 		getCassandraClient().remove(ByteBuffer.wrap(key.getBytes("UTF-8")), path, System.currentTimeMillis(), REMOVE_CONSISTENCY_LEVEL);
 		//delay();
@@ -1247,22 +1245,22 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		SlicePredicate predicate = new SlicePredicate();
 		//	SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 3000);
 		SliceRange range = new SliceRange();
-		range.setStart("".getBytes());
-		range.setFinish("".getBytes());
+		range.setStart("".getBytes("UTF-8"));
+		range.setFinish("".getBytes("UTF-8"));
 		range.setReversed(false);
 
 		ColumnParent parent = new ColumnParent();
 		parent.setColumn_family(column_family);
 		predicate.setSlice_range(range);
 
-		byte[] last_key = "".getBytes();
+		byte[] last_key = "".getBytes("UTF-8");
 		int alive_keys = 0;
 		int total_keys = 0;
 		boolean terminated = false;
 
 		KeyRange krange = new KeyRange();
 		krange.setStart_key(last_key);
-		krange.setEnd_key("".getBytes());
+		krange.setEnd_key("".getBytes("UTF-8"));
 		krange.setCount(search_slice_ratio);
 
 		while (!terminated) {
@@ -1308,7 +1306,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			Object data = entry.getValue();
 
 			Column col = new Column();
-			col.setName(name.getBytes());
+			col.setName(name.getBytes("UTF-8"));
 			col.setValue(BenchmarkUtil.getBytes(data));
 			col.setTimestamp(System.currentTimeMillis());
 
@@ -1382,7 +1380,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		parent.setColumn_family(column_family);
 
 		Column column = new Column();
-		column.setName(column_name.getBytes());
+		column.setName(column_name.getBytes("UTF-8"));
 		column.setValue(BenchmarkUtil.getBytes(value));
 		column.setTimestamp(System.currentTimeMillis());
 
@@ -1393,10 +1391,10 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		// ColumnPath path = new ColumnPath(column_family, SuperColumn.getBytes(), Column.getBytes());
 		ColumnParent parent = new ColumnParent();
 		parent.setColumn_family(column_family);
-		parent.setSuper_column(SuperColumn.getBytes());
+		parent.setSuper_column(SuperColumn.getBytes("UTF-8"));
 
 		Column column = new Column();
-		column.setName(Column.getBytes());
+		column.setName(Column.getBytes("UTF-8"));
 		column.setValue(BenchmarkUtil.getBytes(value));
 		column.setTimestamp(System.currentTimeMillis());
 
@@ -1407,7 +1405,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 	public Object readfromColumn(String key, String ColumnFamily, String column, ConsistencyLevel con) throws Exception {
 		ColumnPath path = new ColumnPath();
 		path.setColumn_family(ColumnFamily);
-		path.setColumn(column.getBytes());
+		path.setColumn(column.getBytes("UTF-8"));
 		byte[] value = null;
 		try {
 			value = getCassandraClient().get(ByteBuffer.wrap(key.getBytes("UTF-8")), path, con).column.getValue();
@@ -1425,8 +1423,8 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 		//   ColumnPath path = new ColumnPath(columnFamily, superColumnKey.getBytes(), column.getBytes());
 		ColumnPath path = new ColumnPath(columnFamily);
-		path.setSuper_column(superColumnKey.getBytes());
-		path.setColumn(column.getBytes());
+		path.setSuper_column(superColumnKey.getBytes("UTF-8"));
+		path.setColumn(column.getBytes("UTF-8"));
 
 		byte[] value = null;
 		try {
@@ -1447,7 +1445,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 		ColumnParent parent = new ColumnParent(columnFamily);
 		if (superColumn != null) {
-			parent.setSuper_column(superColumn.getBytes());
+			parent.setSuper_column(superColumn.getBytes("UTF-8"));
 		}
 
 
@@ -1457,7 +1455,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		List<ByteBuffer> field_names = new ArrayList<ByteBuffer>();
 		for (String field : column_names) {
 
-			field_names.add(ByteBuffer.wrap(field.getBytes()));
+			field_names.add(ByteBuffer.wrap(field.getBytes("UTF-8")));
 		}
 		fields.setColumn_names(field_names);
 
@@ -1479,8 +1477,8 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 			//SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 2000);
 			SliceRange range = new SliceRange();
-			range.setStart("".getBytes());
-			range.setFinish("".getBytes());
+			range.setStart("".getBytes("UTF-8"));
+			range.setFinish("".getBytes("UTF-8"));
 			range.setReversed(false);
 
 			predicate.setSlice_range(range);
@@ -1490,7 +1488,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			List<ByteBuffer> field_names = new ArrayList<ByteBuffer>();
 			for (String field : column_names) {
 
-				field_names.add(ByteBuffer.wrap(field.getBytes()));
+				field_names.add(ByteBuffer.wrap(field.getBytes("UTF-8")));
 			}
 			predicate.setColumn_names(field_names);
 
@@ -1503,7 +1501,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 		for (ColumnOrSuperColumn columnOrSuperColumn : columns) {
 			Column column = columnOrSuperColumn.getColumn();
-			String name = new String(column.getName());
+			String name = new String(column.getName(), "UTF-8");
 			Object value = BenchmarkUtil.toObject(column.getValue());
 			value_map.put(name, value);
 
@@ -1528,8 +1526,8 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		// predicate.setColumn_names(column_names);
 
 		SliceRange range = new SliceRange();
-		range.setStart("".getBytes());
-		range.setFinish("".getBytes());
+		range.setStart("".getBytes("UTF-8"));
+		range.setFinish("".getBytes("UTF-8"));
 		range.setReversed(false);
 		range.setCount(limit);
 
@@ -1546,7 +1544,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			Map<String, Object> value_map = new TreeMap<String, Object>();
 
 			for (Column column : columns) {
-				String name = new String(column.getName());
+				String name = new String(column.getName(), "UTF-8");
 				if (names.contains(name)) {
 					Object value = BenchmarkUtil.toObject(column.getValue());
 					value_map.put(name, value);
@@ -1574,8 +1572,8 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 		//SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 300);
 		SliceRange range = new SliceRange();
-		range.setStart("".getBytes());
-		range.setFinish("".getBytes());
+		range.setStart("".getBytes("UTF-8"));
+		range.setFinish("".getBytes("UTF-8"));
 		range.setReversed(false);
 
 		predicate.setSlice_range(range);
@@ -1604,10 +1602,10 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 		SlicePredicate predicate = new SlicePredicate();
 
-//		SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, 500);
+//		SliceRange range = new SliceRange("".getBytes("UTF-8"), "".getBytes("UTF-8"), false, 500);
 		SliceRange range = new SliceRange();
-		range.setStart("".getBytes());
-		range.setFinish("".getBytes());
+		range.setStart("".getBytes("UTF-8"));
+		range.setFinish("".getBytes("UTF-8"));
 		range.setReversed(false);
 		range.setCount(500);
 		predicate.setSlice_range(range);
@@ -1632,11 +1630,11 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 				SuperColumn superColumn = columnOrSuperColumn.getSuper_column();
 				Map<String, Object> map = new TreeMap<String, Object>();
 				for (Column col : superColumn.getColumns()) {
-					String name = new String(col.getName());
+					String name = new String(col.getName(), "UTF-8");
 					Object value = BenchmarkUtil.toObject(col.getValue());
 					map.put(name, value);
 				}
-				String super_name = new String(superColumn.getName());
+				String super_name = new String(superColumn.getName(), "UTF-8");
 				value_map.put(super_name, map);
 			}
 
@@ -1656,8 +1654,8 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 //		SliceRange range = new SliceRange("".getBytes(), "".getBytes(), false, limit);
 		SliceRange range = new SliceRange();
-		range.setStart("".getBytes());
-		range.setFinish("".getBytes());
+		range.setStart("".getBytes("UTF-8"));
+		range.setFinish("".getBytes("UTF-8"));
 		range.setReversed(false);
 		range.setCount(limit);
 
@@ -1672,11 +1670,11 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			SuperColumn superColumn = columnOrSuperColumn.getSuper_column();
 			Map<String, Object> map = new TreeMap<String, Object>();
 			for (Column col : superColumn.getColumns()) {
-				String name = new String(col.getName());
+				String name = new String(col.getName(), "UTF-8");
 				Object value = BenchmarkUtil.toObject(col.getValue());
 				map.put(name, value);
 			}
-			String super_name = new String(superColumn.getName());
+			String super_name = new String(superColumn.getName(), "UTF-8");
 			value_map.put(super_name, map);
 		}
 
@@ -1796,8 +1794,8 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		SlicePredicate predicate = new SlicePredicate();
 
 		SliceRange slice_range = new SliceRange();
-		slice_range.setStart("".getBytes());
-		slice_range.setFinish("".getBytes());
+		slice_range.setStart("".getBytes("UTF-8"));
+		slice_range.setFinish("".getBytes("UTF-8"));
 		slice_range.setReversed(false);
 
 		//SliceRange slice_range = new SliceRange("".getBytes(), "".getBytes(), false, 10500);
@@ -1807,11 +1805,11 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		parent.setColumn_family(column_family);
 		predicate.setSlice_range(slice_range);
 
-		byte[] last_key = "".getBytes();
+		byte[] last_key = "".getBytes("UTF-8");
 
 
 		KeyRange range = new KeyRange();
-		range.setStart_key("".getBytes());
+		range.setStart_key("".getBytes("UTF-8"));
 		range.setEnd_key(last_key);
 		range.setCount(search_slice_ratio);
 
@@ -1847,7 +1845,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 								results.get(key_name).put(superColumn_name, new TreeMap<String, Object>());
 							}
 							for (Column co : c.getSuper_column().columns) {
-								results.get(key_name).get(superColumn_name).put(new String(co.getName()), BenchmarkUtil.toObject(co.getValue()));
+								results.get(key_name).get(superColumn_name).put(new String(co.getName(), "UTF-8"), BenchmarkUtil.toObject(co.getValue()));
 							}
 						}
 					}
@@ -1964,7 +1962,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		List<ColumnOrSuperColumn> item_data = getListColumns(item + "", "item", null, columns, READ_CONSISTENCY_LEVEL);
 		for (ColumnOrSuperColumn column : item_data) {
 			Column item_col = column.getColumn();
-			String name = new String(item_col.getName());
+			String name = new String(item_col.getName(), "UTF-8");
 			Object obj = BenchmarkUtil.toObject(item_col.getValue());
 
 			if (name.equals("I_COST")) {
@@ -2009,29 +2007,29 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		long timestamp = System.currentTimeMillis();
 
 		Column cost = new Column();
-		cost.setName("SCL_COST".getBytes());
+		cost.setName("SCL_COST".getBytes("UTF-8"));
 		cost.setValue(BenchmarkUtil.getBytes(i_cost));
 		cost.setTimestamp(timestamp);
 
 
 		Column srp = new Column();
-		srp.setName("SCL_SRP".getBytes());
+		srp.setName("SCL_SRP".getBytes("UTF-8"));
 		srp.setValue(BenchmarkUtil.getBytes(i_srp));
 		srp.setTimestamp(timestamp);
 
 
 		Column title = new Column();
-		title.setName("SCL_TITLE".getBytes());
+		title.setName("SCL_TITLE".getBytes("UTF-8"));
 		title.setValue(BenchmarkUtil.getBytes(i_title));
 		title.setTimestamp(timestamp);
 
 		Column back = new Column();
-		back.setName("SCL_BACKING".getBytes());
+		back.setName("SCL_BACKING".getBytes("UTF-8"));
 		back.setValue(BenchmarkUtil.getBytes(i_backing));
 		back.setTimestamp(timestamp);
 
 		Column qty_col = new Column();
-		qty_col.setName("SCL_QTY".getBytes());
+		qty_col.setName("SCL_QTY".getBytes("UTF-8"));
 		qty_col.setValue(BenchmarkUtil.getBytes(qty));
 		qty_col.setTimestamp(timestamp);
 
@@ -2043,7 +2041,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 
 		SuperColumn s_column = new SuperColumn();
-		s_column.setName((item + "").getBytes());
+		s_column.setName((item + "").getBytes("UTF-8"));
 		s_column.setColumns(column_insert);
 
 		ColumnOrSuperColumn superColumn = new ColumnOrSuperColumn();
@@ -2188,7 +2186,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 		List<ColumnOrSuperColumn> cust_columns = getListColumns(C_ID, "customer", null, columns, READ_CONSISTENCY_LEVEL);
 		for (ColumnOrSuperColumn column : cust_columns) {
-			if ((new String(column.getColumn().getName())).equals("C_ADDR_ID")) {
+			if ((new String(column.getColumn().getName(), "UTF-8")).equals("C_ADDR_ID")) {
 				String add_id = (String) BenchmarkUtil.toObject(column.getColumn().getValue());
 				columns = new ArrayList<String>();
 				columns.add("ADDR_STREET1");
@@ -2205,13 +2203,13 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		long timestamp = System.currentTimeMillis();
 
 		Column login = new Column();
-		login.setName("C_LOGIN".getBytes());
+		login.setName("C_LOGIN".getBytes("UTF-8"));
 		login.setValue(BenchmarkUtil.getBytes(new Timestamp(System.currentTimeMillis())));
 		login.setTimestamp(timestamp);
 
 
 		Column expirantion = new Column();
-		expirantion.setName("C_EXPIRATION".getBytes());
+		expirantion.setName("C_EXPIRATION".getBytes("UTF-8"));
 		expirantion.setValue(BenchmarkUtil.getBytes(new Timestamp(System.currentTimeMillis() + 7200000)));
 		expirantion.setTimestamp(timestamp);
 
@@ -2290,28 +2288,28 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			long timestamp = System.currentTimeMillis();
 
 			Column sub_total = new Column();
-			sub_total.setName("SC_SUB_TOTAL".getBytes());
+			sub_total.setName("SC_SUB_TOTAL".getBytes("UTF-8"));
 			sub_total.setValue(BenchmarkUtil.getBytes(SC_SUB_TOTAL));
 			sub_total.setTimestamp(timestamp);
 
 
 			Column tax = new Column();
-			tax.setName("SC_TAX".getBytes());
+			tax.setName("SC_TAX".getBytes("UTF-8"));
 			tax.setValue(BenchmarkUtil.getBytes(SC_TAX));
 			tax.setTimestamp(timestamp);
 
 			Column ship = new Column();
-			ship.setName("SC_SHIP_COST".getBytes());
+			ship.setName("SC_SHIP_COST".getBytes("UTF-8"));
 			ship.setValue(BenchmarkUtil.getBytes(SC_SHIP_COST));
 			ship.setTimestamp(timestamp);
 
 			Column total = new Column();
-			total.setName("SC_TOTAL".getBytes());
+			total.setName("SC_TOTAL".getBytes("UTF-8"));
 			total.setValue(BenchmarkUtil.getBytes(SC_TOTAL));
 			total.setTimestamp(timestamp);
 
 			Column date = new Column();
-			date.setName("SC_DATE".getBytes());
+			date.setName("SC_DATE".getBytes("UTF-8"));
 			date.setValue(BenchmarkUtil.getBytes(new Timestamp(System.currentTimeMillis())));
 			date.setTimestamp(timestamp);
 
@@ -2323,7 +2321,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 
 			SuperColumn s_column = new SuperColumn();
-			s_column.setName("cart_info".getBytes());
+			s_column.setName("cart_info".getBytes("UTF-8"));
 			s_column.setColumns(column_insert);
 
 			ColumnOrSuperColumn superColumn = new ColumnOrSuperColumn();
@@ -2825,30 +2823,30 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		List<Column> columns = new ArrayList<Column>();
 
 		Column c_related1 = new Column();
-		c_related1.setName("I_RELATED1".getBytes());
+		c_related1.setName("I_RELATED1".getBytes("UTF-8"));
 		c_related1.setValue(BenchmarkUtil.getBytes(best.get(0)));
 		c_related1.setTimestamp(timestamp);
 
 		Column c_related2 = new Column();
-		c_related2.setName("I_RELATED2".getBytes());
+		c_related2.setName("I_RELATED2".getBytes("UTF-8"));
 		c_related2.setValue(BenchmarkUtil.getBytes(best.get(1)));
 		c_related2.setTimestamp(timestamp);
 
 
 		Column c_related3 = new Column();
-		c_related3.setName("I_RELATED3".getBytes());
+		c_related3.setName("I_RELATED3".getBytes("UTF-8"));
 		c_related3.setValue(BenchmarkUtil.getBytes(best.get(2)));
 		c_related3.setTimestamp(timestamp);
 
 
 		Column c_related4 = new Column();
-		c_related4.setName("I_RELATED4".getBytes());
+		c_related4.setName("I_RELATED4".getBytes("UTF-8"));
 		c_related4.setValue(BenchmarkUtil.getBytes(best.get(3)));
 		c_related4.setTimestamp(timestamp);
 
 
 		Column c_related5 = new Column();
-		c_related5.setName("I_RELATED5".getBytes());
+		c_related5.setName("I_RELATED5".getBytes("UTF-8"));
 		c_related5.setValue(BenchmarkUtil.getBytes(best.get(4)));
 		c_related5.setTimestamp(timestamp);
 
@@ -2870,22 +2868,22 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 		String thumb = image.replace("image", "thumb");
 
 		Column c_cost = new Column();
-		c_cost.setName("I_COST".getBytes());
+		c_cost.setName("I_COST".getBytes("UTF-8"));
 		c_cost.setValue(BenchmarkUtil.getBytes(I_COST));
 		c_cost.setTimestamp(timestamp);
 
 		Column c_image = new Column();
-		c_image.setName("I_IMAGE".getBytes());
+		c_image.setName("I_IMAGE".getBytes("UTF-8"));
 		c_image.setValue(BenchmarkUtil.getBytes(image));
 		c_image.setTimestamp(timestamp);
 
 		Column c_thumb = new Column();
-		c_thumb.setName("I_THUMBNAIL".getBytes());
+		c_thumb.setName("I_THUMBNAIL".getBytes("UTF-8"));
 		c_thumb.setValue(BenchmarkUtil.getBytes(thumb));
 		c_thumb.setTimestamp(timestamp);
 
 		Column c_date = new Column();
-		c_date.setName("I_PUB_DATE".getBytes());
+		c_date.setName("I_PUB_DATE".getBytes("UTF-8"));
 		c_date.setValue(BenchmarkUtil.getBytes(new_date));
 		c_date.setTimestamp(timestamp);
 
