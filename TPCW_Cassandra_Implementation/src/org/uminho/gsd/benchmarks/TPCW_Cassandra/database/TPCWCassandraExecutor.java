@@ -2420,7 +2420,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 
 		Map<String, Map<String, Map<String, Object>>> orders = super_rangeQuery("orders", null, 3333);
 	   // Map<String, Map<String, Map<String, Object>>> orders = modified_super_rangeQuery("orders", "order_info", null, 3333);
-		System.out.println("retreived best sellers = " + orders.size());
+	//	System.out.println("retreived best sellers = " + orders.size());
 
 		Map<Integer, Integer> items_info = new TreeMap<Integer, Integer>();
 		CopyOnWriteArrayList<String> item_keys = new CopyOnWriteArrayList<String>();
