@@ -1,0 +1,64 @@
+{
+   "BenchmarkInterfaces" :
+      {
+         "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.generic.workloads.TPCWWorkloadFactory",
+         "DataEngineInterface" : "org.uminho.gsd.benchmarks.TPCW_MySQL.executor.TPCW_MySQL_Factory",
+         "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.TPCW_MySQL.populator.Populator"
+      },
+   "BenchmarkInfo" :
+      {
+         "populatorConfiguration" : "TPCW.json",
+         "databaseExecutorConfiguration" : "MYSQL.json",
+         "workloadConfiguration" : "TPCWBrowsingMix.json",
+         "thread_number" : "100",
+         "operation_number" : "200"
+      },
+   "BenchmarkSlaves" :
+      {
+      },
+   "Database_alias" :
+      {
+         "cassandra" :
+            {
+               "DataEngineInterface" : "org.uminho.gsd.benchmarks.TPCW_Cassandra.database.TPCWCassandraExecutorFactory",
+               "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.TPCW_Cassandra.populator.CassandraPopulator",
+               "databaseExecutorConfiguration" : "CassandraTPCW.json"
+            },
+         "cassandra_r" :
+            {
+               "DataEngineInterface" : "org.uminho.gsd.benchmarks.TPCW_Cassandra.database.TPCWCassandra_noRange_ExecutorFactory",
+               "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.TPCW_Cassandra.populator.CassandraPopulator",
+               "databaseExecutorConfiguration" : "CassandraTPCW.json"
+            },    
+         "mysql" :
+            {
+               "DataEngineInterface" : "org.uminho.gsd.benchmarks.TPCW_MySQL.executor.TPCW_MySQL_Factory",
+               "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.TPCW_MySQL.populator.Populator",
+               "databaseExecutorConfiguration" : "MYSQL.json"
+            },
+         "orm" :
+            {
+               "DataEngineInterface" : "org.uminho.gsd.benchmarks.TPCW_CassandraOM.database_executor.TPCWCassandraDatanucleusExecutorFactory",
+               "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.TPCW_CassandraOM.populator.ORMPopulator",
+               "databaseExecutorConfiguration" : "CassandraTPCW.json"
+            }
+      },
+   "Workload_alias" :
+      {
+         "consistency" :
+            {
+               "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.generic.workloads.ConsistencyTestWorkloadFactory",
+               "workloadConfiguration" : "TPCWConsistency.json"
+            },
+         "ordering" :
+            {
+               "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.generic.workloads.TPCWWorkloadFactory",
+               "workloadConfiguration" : "TPCWOrderingMix.json"
+            },
+         "browsing" :
+            {
+               "BenchmarkWorkload" : "org.uminho.gsd.benchmarks.generic.workloads.TPCWWorkloadFactory",
+               "workloadConfiguration" : "TPCWBrowsingMix.json"
+            }
+      }
+}

@@ -1,0 +1,36 @@
+{
+"DataBaseInfo":{
+	"keyspace":"Tpcw"
+	},
+"DataBaseConnections":{
+	"192.168.82.27":"9160"
+	},
+"Configuration":{
+	 "retrievedRowSlices":"1000"
+	},
+"ConsistencyLevels":{
+	"INSERT_CONSISTENCY_LEVEL":"QUORUM",
+	"REMOVE_CONSISTENCY_LEVEL":"ALL",
+	"RANGE_CONSISTENCY_LEVEL":"QUORUM",
+	"TRANSACTIONAL_CONSISTENCY_LEVEL":"QUORUM",
+	"READ_CONSISTENCY_LEVEL":"QUORUM",
+	"WRITE_CONSISTENCY_LEVEL":"QUORUM"
+	},
+"ColumnPaths":{
+	"OrderLines":"OL_O_ID",
+	"ShoppingCart":"KEY_SHOPPING_CART",
+	"results":"CLIENT_ID"
+	},
+"OtherConnections":{
+    "192.168.82.21":"9160",
+	"192.168.82.161":"9160",
+	"localhost":"9160",
+    "192.168.82.162":"9160",
+    "192.168.82.163":"9160",
+    "192.168.82.164":"9160",
+    "192.168.82.165":"9160",
+    "192.168.82.166":"9160",
+    "Orders":"O_C_ID"
+	}	
+	
+}

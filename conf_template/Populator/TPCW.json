@@ -1,0 +1,11 @@
+{
+"BenchmarkPopulator":{
+	"name":"TPCW_POPULATOR",
+	"thread_number":"5",
+	"delay_inserts":"true",
+	"delay_time":"1000",
+	"result_path":"/Results/populating",
+    "tpcw_numEBS":"10",
+    "tpcw_numItems":"10000"
+	}
+}
