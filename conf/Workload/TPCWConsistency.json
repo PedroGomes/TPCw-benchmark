@@ -6,7 +6,7 @@
     "resultPath":"./Results"	
 	},	
 "ProbabilityDistributions":{
-	"Distribution":"org.uminho.gsd.benchmarks.probabilityDistributions.ZipfDistribution",
+	"Distribution":"org.uminho.gsd.benchmarks.probabilityDistributions.PowerLawDistribution",
     "skew":"1.2"
 	}, 	
 "Workload":{	
