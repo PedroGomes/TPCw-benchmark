@@ -168,7 +168,7 @@
     <pathelement location="${benchmarkingsuite.output.dir}"/>
     <pathelement location="${basedir}/conf/DataStore"/>
     <pathelement location="${basedir}/libs/libthrift-0.5.jar"/>
-    <pathelement location="${basedir}/libs/apache-cassandra-0.7.3.jar"/>
+    <pathelement location="${basedir}/libs/apache-cassandra-0.7.9.jar"/>
     <pathelement location="${basedir}/libs/slf4j-log4j12-1.5.8.jar"/>
     <pathelement location="${basedir}/libs/slf4j-api-1.5.8.jar"/>
   </path>
@@ -178,7 +178,7 @@
     <path refid="benchmarkingsuite.runtime.production.module.classpath"/>
     <pathelement location="${basedir}/conf/DataStore"/>
     <pathelement location="${basedir}/libs/libthrift-0.5.jar"/>
-    <pathelement location="${basedir}/libs/apache-cassandra-0.7.3.jar"/>
+    <pathelement location="${basedir}/libs/apache-cassandra-0.7.9.jar"/>
     <pathelement location="${basedir}/libs/slf4j-log4j12-1.5.8.jar"/>
     <pathelement location="${basedir}/libs/slf4j-api-1.5.8.jar"/>
   </path>
@@ -189,7 +189,7 @@
     <pathelement location="${benchmarkingsuite.output.dir}"/>
     <pathelement location="${basedir}/conf/DataStore"/>
     <pathelement location="${basedir}/libs/libthrift-0.5.jar"/>
-    <pathelement location="${basedir}/libs/apache-cassandra-0.7.3.jar"/>
+    <pathelement location="${basedir}/libs/apache-cassandra-0.7.9.jar"/>
     <pathelement location="${basedir}/libs/slf4j-log4j12-1.5.8.jar"/>
     <pathelement location="${basedir}/libs/slf4j-api-1.5.8.jar"/>
   </path>
@@ -200,7 +200,7 @@
     <path refid="benchmarkingsuite.runtime.module.classpath"/>
     <pathelement location="${basedir}/conf/DataStore"/>
     <pathelement location="${basedir}/libs/libthrift-0.5.jar"/>
-    <pathelement location="${basedir}/libs/apache-cassandra-0.7.3.jar"/>
+    <pathelement location="${basedir}/libs/apache-cassandra-0.7.9.jar"/>
     <pathelement location="${basedir}/libs/slf4j-log4j12-1.5.8.jar"/>
     <pathelement location="${basedir}/libs/slf4j-api-1.5.8.jar"/>
   </path>
