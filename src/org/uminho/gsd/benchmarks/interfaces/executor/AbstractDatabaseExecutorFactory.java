@@ -152,7 +152,7 @@ public abstract class AbstractDatabaseExecutorFactory {
 				}
 			    if(stats_handler!=null){
 					stats_handler.logResult("TPM", (tpm));
-					System.out.println("TPM:" + tpm);
+				//	System.out.println("TPM:" + tpm);
 				}
 			}
 
