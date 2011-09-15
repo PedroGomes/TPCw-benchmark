@@ -163,7 +163,7 @@ public class TPCWCassandraExecutorFactory extends AbstractDatabaseExecutorFactor
         }
 
         if (!conf.containsKey("Configuration")) {
-            System.out.println("[ERROR:] NO CONFIGURATION FOUND: THINK TIME -> 50 ms, RETRIEVED SLICES -> 1000 rows");
+            System.out.println("[WARN:] RETRIEVED SLICES -> 1000 rows, add \"Configuration\" section and a \"retrievedRowSlices\" parameter");
             search_slice_ratio = 1000;
         } else {
             Map<String, String> CI = conf.get("Configuration");
@@ -171,8 +171,9 @@ public class TPCWCassandraExecutorFactory extends AbstractDatabaseExecutorFactor
             if (CI.containsKey("retrievedRowSlices")) {
                 search_slice_ratio = Integer.parseInt(CI.get("retrievedRowSlices"));
             } else {
-                System.out.println("[ERROR:] NO CONFIGURATION FOUND: RETRIEVED SLICES -> 1000 rows");
+                System.out.println("[ERROR:] NO CONFIGURATION FOUND: RETRIEVED SLICES -> 1000 rows, add a \"retrievedRowSlices\" parameter to the \"Configuration\" section");
                 search_slice_ratio = 1000;
+
 
             }
         }
