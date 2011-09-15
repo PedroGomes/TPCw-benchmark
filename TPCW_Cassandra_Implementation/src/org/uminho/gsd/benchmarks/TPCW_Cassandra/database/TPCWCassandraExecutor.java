@@ -898,22 +898,25 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 						for (ColumnOrSuperColumn c : key.getColumns()) {
 							if (c.isSetSuper_column()) {
 								for (Column co : c.getSuper_column().columns) {
-									if (!results.containsKey(key.key)) {
+									String r_key = charset.decode(key.key).toString();
+
+									if (!results.containsKey(r_key)) {
 										Map<String, Object> returned_fields = new TreeMap<String, Object>();
 										returned_fields.put(new String(co.getName(), "UTF-8"), BenchmarkUtil.toObject(co.getValue()));
 										results.put(new String(key.getKey(), "UTF-8"), returned_fields);
 									} else {
-										results.get(key.key).put(new String(co.getName(), "UTF-8"), BenchmarkUtil.toObject(co.getValue()));
+										results.get(r_key).put(new String(co.getName(), "UTF-8"), BenchmarkUtil.toObject(co.getValue()));
 									}
 								}
 							} else {
 
-								if (!results.containsKey(key.key)) {
+								String r_key =  charset.decode(key.key).toString();
+								if (!results.containsKey(r_key)) {
 									Map<String, Object> returned_fields = new TreeMap<String, Object>();
 									returned_fields.put(new String(c.getColumn().getName(), "UTF-8"), BenchmarkUtil.toObject(c.getColumn().getValue()));
-									results.put(new String(key.getKey(), "UTF-8"), returned_fields);
+									results.put(r_key, returned_fields);
 								} else {
-									results.get(key.key).put(new String(c.getColumn().getName(), "UTF-8"), BenchmarkUtil.toObject(c.getColumn().getValue()));
+									results.get(r_key).put(new String(c.getColumn().getName(), "UTF-8"), BenchmarkUtil.toObject(c.getColumn().getValue()));
 								}
 							}
 						}
