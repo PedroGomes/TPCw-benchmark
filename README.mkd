@@ -68,12 +68,13 @@ This database allows the use of different populating classes, database executing
 # Database configuration:
 
 Mysql:
-The population process creates the tables and if the user uses the remove flag, the platform preforms a drop to the database and recreates it (or creates it if non existent).
+- The population process creates the tables and if the user uses the remove flag, the platform preforms a drop to the database and recreates it (or creates it if non existent).
 
 Cassandra 0.6:
-Use the schema shown on the wiki
+- Use the schema shown on the wiki
+
 Cassandra 0.7+:
-Create the keyspace as defined by you in the configuration file with your options, and the database will create the column families. 
+- Create the keyspace as defined by you in the configuration file with your options, and the database will create the column families. 
  
 
 # Warnings and needed improvements:
