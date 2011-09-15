@@ -10,7 +10,7 @@ A basic consistency workload is also available that allows the user to measure t
 
 Execute:
 <code>
-- ant all 
+- ant 
 </code>
 	
 Used libraries: 
@@ -24,13 +24,12 @@ Benchmark platform:
 Mysql:
 - mysql-connector-java-5.1.12-bin.jar
 
-Cassandra (0.6.X): 
-- libthrift-r917130.jar
-- apache-cassandra-0.6.1.jar
-- slf4j-api-1.5.8.jar
-- slf4j-log4j12-1.5.8.jar
+Cassandra (0.Y.X): 
+- libthrift.Z.jar 
+- apache-cassandra-0.Y.X.jar
+- apache-cassandra-thrift-0.8.5.jar (0.8)
 
-Datanucleus Cassandra: 
+Datanucleus Cassandra (only for 0.6): 
 - asm-3.1.jar (Datanucleus)
 - datanucleus-core-2.1.0-m2.jar (Datanucleus)
 - datanucleus-enhancer-2.0.2.jar (Datanucleus)
@@ -39,6 +38,8 @@ Datanucleus Cassandra:
 
 
 # Configuration: 
+
+The project comes with various templates for the different databases and workloads under the conf_template folder, use this folder to create your own. After that, rename the benchmarkingsuite.properties.template to benchmarkingsuite.propertiesm, defining here where your folder will be so the ant process creates a fully functional binary.   
 
 This database allows the use of different populating classes, database executing interfaces and workload factories. To configure the benchmark the user must edit the base Benchmark JSON file and the associated workload and database files accordingly with the context.  
 
@@ -63,11 +64,20 @@ This database allows the use of different populating classes, database executing
                                                  
     -m        : run as master                                                                                
     -s <port> : run as slave in the defined port
-                                                            
+       
+# Database configuration:
+
+Mysql:
+The population process creates the tables and if the user uses the remove flag, the platform preforms a drop to the database and recreates it (or creates it if non existent).
+
+Cassandra 0.6:
+Use the schema shown on the wiki
+Cassandra 0.7+:
+Create the keyspace as defined by you in the configuration file with your options, and the database will create the column families. 
+ 
 
 # Warnings and needed improvements:
 - Based on TPCW v1.8
-- Cassandra support only for 0.6, but the code is easy to change if needed.  
 - The population process started in a generic form and for that reason the Cassandra populator reads what fields it should use to create super columns; maybe this doesn't make sense anymore.
 - One of the problems in the MySQL benchmark is the client side generation of ids. Avoiding the overhead of transactions or auto increment (synchronization mechanisms as seen in other implementations are not suitable with the multi node mode) some of the queries may have minor changes due to their ids. 
 - On consistency workload the stock of items is usually a high number to ease the analyze of the data, on normal TPCW workloads the stock is updated when the coded minimum is reached as supposed, but in Cassandra no guaranties are made about the outcome of that process.   
