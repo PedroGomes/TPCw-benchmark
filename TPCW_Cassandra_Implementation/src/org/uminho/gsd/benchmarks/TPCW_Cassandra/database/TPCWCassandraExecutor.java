@@ -24,7 +24,9 @@ import org.apache.cassandra.thrift.*;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.uminho.gsd.benchmarks.TPCW_Cassandra.entities.*;
 import org.uminho.gsd.benchmarks.TPCW_Cassandra.populator.SchemaUtils;
@@ -213,12 +215,20 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			String host = rand_host.split(":")[1];
 
 			try {
-				TSocket socket = new TSocket(host, connections.get(host));
-				TProtocol prot = new TBinaryProtocol(socket);
-				Cassandra.Client c = new Cassandra.Client(prot);
-				socket.open();
-				clients.add(c);
-				c.set_keyspace(keyspace);
+
+				TTransport transport;
+				TProtocol protocol;
+				Cassandra.Client client;
+
+
+				transport = new TFramedTransport(new TSocket(host, connections.get(host)));
+				transport.open();
+				protocol = new org.apache.thrift.protocol.TBinaryProtocol(transport);
+				client = new Cassandra.Client(protocol);
+
+				clients.add(client);
+				client.set_keyspace(keyspace);
+
 			} catch (TTransportException ex) {
 				System.out.println("[ERROR] FAILED TO CONNECT TO:" + host + ":port:" + connections.get(host) + " -> CLIENT IGNORED ");
 				//Logger.getLogger(CassandraInterface.class.getName()).log(Level.SEVERE, null, ex);
@@ -262,7 +272,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 	}
 
 	public void setSchema(List<Map<String, String>> column_families) throws Exception {
-		SchemaUtils.createSchema(keyspace,column_families,clients);
+		SchemaUtils.createSchema(keyspace, column_families, clients);
 
 
 	}
@@ -300,9 +310,13 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 	}
 
 	public void closeClient() {
-		for (Cassandra.Client c : clients) {
-			c.getInputProtocol().getTransport().close();
-			c = null;
+		for (Cassandra.Client client : clients) {
+			try {
+				client.getOutputProtocol().getTransport().flush();
+				client.getOutputProtocol().getTransport().close();
+			} catch (TTransportException e) {
+				e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+			}
 		}
 		clients = null;
 		connections = null;
@@ -1513,7 +1527,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 //        }
 		// predicate.setColumn_names(column_names);
 
-				SliceRange range = new SliceRange();
+		SliceRange range = new SliceRange();
 		range.setStart("".getBytes());
 		range.setFinish("".getBytes());
 		range.setReversed(false);
@@ -1544,7 +1558,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			}
 
 
-			result.put(new String(sc.super_column.getName(),"UTF-8"), value_map);
+			result.put(new String(sc.super_column.getName(), "UTF-8"), value_map);
 
 		}
 		//delay();
@@ -1703,7 +1717,7 @@ public class TPCWCassandraExecutor implements DatabaseExecutorInterface {
 			int qty = 0;
 
 			for (Column c : columns.get(cartline)) {
-				if (new String(c.getName(),"UTF-8").equals("QTY")) {
+				if (new String(c.getName(), "UTF-8").equals("QTY")) {
 					qty = (Integer) BenchmarkUtil.toObject(c.getValue());
 				}
 			}
