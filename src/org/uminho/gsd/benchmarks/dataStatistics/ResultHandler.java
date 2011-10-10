@@ -27,16 +27,19 @@ import org.uminho.gsd.benchmarks.helpers.Pair;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ResultHandler {
 
+	private static List<ResultHandler> client_results =  new CopyOnWriteArrayList<ResultHandler>();
 
-	Map<String, String> bechmark_info = null;
+	private Map<String, String> bechmark_info = null;
 
 	private int testsamples = 100;
-	String test_name;
+
+	private String test_name;
 
 
 	/**
@@ -86,6 +89,10 @@ public class ResultHandler {
 		dataHeader = new TreeMap<String, ArrayList<String>>();
 
 		resulSet = new HashMap<String, Object>();
+
+	//	synchronized (client_results){
+			client_results.add(this);
+	//	}
 
 	}
 
@@ -180,6 +187,9 @@ public class ResultHandler {
 		return bechmark_info;
 	}
 
+	public HashMap<String, ArrayList<Pair<Long, Long>>> getTime_results() {
+		return time_results;
+	}
 
 	/**
 	 * UTILITIES***
@@ -247,11 +257,9 @@ public class ResultHandler {
 		}
 	}
 
-
 	/**
-	 * OUTPUT***
-	 */
-
+	 * OUTPUT
+	 **/
 
 	public void listDataToSOutput() {
 
@@ -324,19 +332,6 @@ public class ResultHandler {
 		}
 
 	}
-
-
-//    public void listDataToFile(String filename) {
-//    }
-//
-//    public void listDataToFile(File filename) {
-//    }
-//
-//    public void doRstatistcs(String filePerfix) {
-//
-//
-//    }
-
 
 	public void listDatatoFiles(String folder_name, String perfix, boolean doMultiple) {
 
@@ -725,7 +720,6 @@ public class ResultHandler {
 
 	}
 
-
 	class resultComparator implements Comparator {
 
 		public int compare(Object o1, Object o2) {
@@ -750,6 +744,9 @@ public class ResultHandler {
 		}
 	}
 
+	public static List<ResultHandler> getClient_results() {
+		return client_results;
+	}
 
 }
 

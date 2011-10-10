@@ -25,6 +25,7 @@ import org.uminho.gsd.benchmarks.interfaces.Workload.AbstractWorkloadGeneratorFa
 import org.uminho.gsd.benchmarks.interfaces.Workload.WorkloadGeneratorInterface;
 import org.uminho.gsd.benchmarks.interfaces.executor.AbstractDatabaseExecutorFactory;
 import org.uminho.gsd.benchmarks.interfaces.executor.DatabaseExecutorInterface;
+import org.uminho.gsd.benchmarks.mbean.DataStatistics;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -120,6 +121,8 @@ public class BenchmarkExecutor {
             Thread clientThread = new Thread(clientRunnable, "client:" + client_index);
             clientThread.start();
         }
+
+		DataStatistics dataStatistics = new DataStatistics();
 
         try {
             synchronizationBarrier.await();
