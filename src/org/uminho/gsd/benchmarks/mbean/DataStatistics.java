@@ -104,6 +104,10 @@ public class DataStatistics implements DataStatisticsMBean{
 		data_extraction.schedule(metric_calculation, 15000, statistics_timeout);
 	}
 
+	public void setTpm_resultHandler(ResultHandler tpm_resultHandler) {
+		this.tpm_resultHandler = tpm_resultHandler;
+	}
+
 	@Override
 	public long getHomeLatency() {
 		return homeLatency;

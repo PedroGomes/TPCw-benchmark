@@ -123,6 +123,7 @@ public class BenchmarkExecutor {
         }
 
 		DataStatistics dataStatistics = new DataStatistics();
+		dataStatistics.setTpm_resultHandler(stats_handler);
 
         try {
             synchronizationBarrier.await();
