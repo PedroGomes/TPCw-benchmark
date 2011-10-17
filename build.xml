@@ -172,6 +172,9 @@
     <pathelement location="${basedir}/libs/apache-cassandra-0.8.5.jar"/>
     <pathelement location="${basedir}/libs/slf4j-log4j12-1.5.8.jar"/>
     <pathelement location="${basedir}/libs/slf4j-api-1.5.8.jar"/>
+    <pathelement location="${basedir}/libs/guava-r08.jar"/>
+    <pathelement location="${basedir}/libs/hector-0.8.0-3-SNAPSHOT-tests.jar"/>
+    <pathelement location="${basedir}/libs/hector-core-0.8.0-3-SNAPSHOT.jar"/>
   </path>
   
   <path id="tpcw_cassandra_implementation.runtime.production.module.classpath">
@@ -183,6 +186,9 @@
     <pathelement location="${basedir}/libs/apache-cassandra-0.8.5.jar"/>
     <pathelement location="${basedir}/libs/slf4j-log4j12-1.5.8.jar"/>
     <pathelement location="${basedir}/libs/slf4j-api-1.5.8.jar"/>
+    <pathelement location="${basedir}/libs/guava-r08.jar"/>
+    <pathelement location="${basedir}/libs/hector-0.8.0-3-SNAPSHOT-tests.jar"/>
+    <pathelement location="${basedir}/libs/hector-core-0.8.0-3-SNAPSHOT.jar"/>
   </path>
   
   <path id="tpcw_cassandra_implementation.module.classpath">
@@ -195,6 +201,9 @@
     <pathelement location="${basedir}/libs/apache-cassandra-0.8.5.jar"/>
     <pathelement location="${basedir}/libs/slf4j-log4j12-1.5.8.jar"/>
     <pathelement location="${basedir}/libs/slf4j-api-1.5.8.jar"/>
+    <pathelement location="${basedir}/libs/guava-r08.jar"/>
+    <pathelement location="${basedir}/libs/hector-0.8.0-3-SNAPSHOT-tests.jar"/>
+    <pathelement location="${basedir}/libs/hector-core-0.8.0-3-SNAPSHOT.jar"/>
   </path>
   
   <path id="tpcw_cassandra_implementation.runtime.module.classpath">
@@ -207,6 +216,9 @@
     <pathelement location="${basedir}/libs/apache-cassandra-0.8.5.jar"/>
     <pathelement location="${basedir}/libs/slf4j-log4j12-1.5.8.jar"/>
     <pathelement location="${basedir}/libs/slf4j-api-1.5.8.jar"/>
+    <pathelement location="${basedir}/libs/guava-r08.jar"/>
+    <pathelement location="${basedir}/libs/hector-0.8.0-3-SNAPSHOT-tests.jar"/>
+    <pathelement location="${basedir}/libs/hector-core-0.8.0-3-SNAPSHOT.jar"/>
   </path>
   
   
@@ -269,22 +281,26 @@
   <path id="tpcw_docm_implementation.module.production.classpath">
     <pathelement location="${benchmarkingsuite.output.dir}"/>
     <pathelement location="${basedir}/conf/DataStore"/>
-    <pathelement location="${basedir}/libs/jdo2-api.jar"/>
-    <pathelement location="${basedir}/libs/datanucleus-enhancer-2.0.2.jar"/>
+    
+    
+    <pathelement location="${basedir}/libs/jdo-api-3.0.jar"/>
+    <pathelement location="${basedir}/libs/datanucleus-enhancer-3.0.1.jar"/>
     <pathelement location="${basedir}/libs/asm-3.1.jar"/>
     <pathelement location="${basedir}/libs/datanucleus-cassandra-0.1.jar"/>
-    <pathelement location="${basedir}/libs/datanucleus-core-2.1.0-m2.jar"/>
+    <pathelement location="${basedir}/libs/datanucleus-core-3.0.2.jar"/>
+    <pathelement location="${basedir}/libs/datanucleus-api-jdo-3.0.2.jar"/>
   </path>
   
   <path id="tpcw_docm_implementation.runtime.production.module.classpath">
     <pathelement location="${tpcw_docm_implementation.output.dir}"/>
     <path refid="benchmarkingsuite.runtime.production.module.classpath"/>
     <pathelement location="${basedir}/conf/DataStore"/>
-    <pathelement location="${basedir}/libs/jdo2-api.jar"/>
-    <pathelement location="${basedir}/libs/datanucleus-enhancer-2.0.2.jar"/>
+    <pathelement location="${basedir}/libs/jdo-api-3.0.jar"/>
+    <pathelement location="${basedir}/libs/datanucleus-enhancer-3.0.1.jar"/>
     <pathelement location="${basedir}/libs/asm-3.1.jar"/>
     <pathelement location="${basedir}/libs/datanucleus-cassandra-0.1.jar"/>
-    <pathelement location="${basedir}/libs/datanucleus-core-2.1.0-m2.jar"/>
+    <pathelement location="${basedir}/libs/datanucleus-core-3.0.2.jar"/>
+    <pathelement location="${basedir}/libs/datanucleus-api-jdo-3.0.2.jar"/>
   </path>
   
   <path id="tpcw_docm_implementation.module.classpath">
@@ -292,11 +308,12 @@
     <pathelement location="${benchmarkingsuite.testoutput.dir}"/>
     <pathelement location="${benchmarkingsuite.output.dir}"/>
     <pathelement location="${basedir}/conf/DataStore"/>
-    <pathelement location="${basedir}/libs/jdo2-api.jar"/>
-    <pathelement location="${basedir}/libs/datanucleus-enhancer-2.0.2.jar"/>
+    <pathelement location="${basedir}/libs/jdo-api-3.0.jar"/>
+    <pathelement location="${basedir}/libs/datanucleus-enhancer-3.0.1.jar"/>
     <pathelement location="${basedir}/libs/asm-3.1.jar"/>
     <pathelement location="${basedir}/libs/datanucleus-cassandra-0.1.jar"/>
-    <pathelement location="${basedir}/libs/datanucleus-core-2.1.0-m2.jar"/>
+    <pathelement location="${basedir}/libs/datanucleus-core-3.0.2.jar"/>
+    <pathelement location="${basedir}/libs/datanucleus-api-jdo-3.0.2.jar"/>
   </path>
   
   <path id="tpcw_docm_implementation.runtime.module.classpath">
@@ -304,11 +321,12 @@
     <pathelement location="${tpcw_docm_implementation.output.dir}"/>
     <path refid="benchmarkingsuite.runtime.module.classpath"/>
     <pathelement location="${basedir}/conf/DataStore"/>
-    <pathelement location="${basedir}/libs/jdo2-api.jar"/>
-    <pathelement location="${basedir}/libs/datanucleus-enhancer-2.0.2.jar"/>
+    <pathelement location="${basedir}/libs/jdo-api-3.0.jar"/>
+    <pathelement location="${basedir}/libs/datanucleus-enhancer-3.0.1.jar"/>
     <pathelement location="${basedir}/libs/asm-3.1.jar"/>
     <pathelement location="${basedir}/libs/datanucleus-cassandra-0.1.jar"/>
-    <pathelement location="${basedir}/libs/datanucleus-core-2.1.0-m2.jar"/>
+    <pathelement location="${basedir}/libs/datanucleus-core-3.0.2.jar"/>
+    <pathelement location="${basedir}/libs/datanucleus-api-jdo-3.0.2.jar"/>
   </path>
   
   
