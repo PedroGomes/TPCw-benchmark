@@ -60,11 +60,18 @@ public class DataStatistics implements DataStatisticsMBean{
 	 **/
 	private long itemInfoLatency;
 
+	/**
+	 *The shopping cart operation latency
+	 **/
+	private long shoppingCartLatency;
+
 
 	/**
 	 *The number of transactions per minute
 	 **/
 	private long transactionsPerMinute;
+
+
 
 
 	/**
@@ -84,9 +91,8 @@ public class DataStatistics implements DataStatisticsMBean{
 			homeLatency = calculateLatency("OP_HOME");
 			bestSellersLatency = calculateLatency("OP_BEST_SELLERS");
 			itemInfoLatency = calculateLatency("OP_ITEM_INFO");
-
+			shoppingCartLatency = calculateLatency("OP_SHOPPING_CART");
 			transactionsPerMinute = calculateTransactionsPerMinute();
-
 		}
 	};
 
@@ -121,6 +127,11 @@ public class DataStatistics implements DataStatisticsMBean{
 	@Override
 	public long getItemInfoLatency() {
 		return itemInfoLatency;
+	}
+
+	@Override
+	public long getShoppingCartLatency() {
+		return shoppingCartLatency;
 	}
 
 	@Override

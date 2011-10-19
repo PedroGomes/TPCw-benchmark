@@ -24,6 +24,8 @@ package org.uminho.gsd.benchmarks.mbean;
  */
 public interface DataStatisticsMBean {
 
+	public long getShoppingCartLatency();
+
     public long getHomeLatency();
 
 	public long getBestSellersLatency();
