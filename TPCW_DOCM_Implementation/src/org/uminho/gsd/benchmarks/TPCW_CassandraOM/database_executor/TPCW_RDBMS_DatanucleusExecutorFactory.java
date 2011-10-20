@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,12 +32,12 @@ import org.uminho.gsd.benchmarks.interfaces.executor.DatabaseExecutorInterface;
  * TPC-W execution factory  interface for Cassandra
  * It loads the configuration for Cassandra and returns execution clients.
  */
-public class TPCWCassandraDatanucleusExecutorFactory extends AbstractDatabaseExecutorFactory {
+public class TPCW_RDBMS_DatanucleusExecutorFactory extends AbstractDatabaseExecutorFactory {
 
 
     KeyGenerator keyGenerator;
 
-    public TPCWCassandraDatanucleusExecutorFactory(BenchmarkExecutor executor, String conf_file) {
+    public TPCW_RDBMS_DatanucleusExecutorFactory(BenchmarkExecutor executor, String conf_file) {
         super(executor, conf_file);
         init();
     }
@@ -58,7 +58,7 @@ public class TPCWCassandraDatanucleusExecutorFactory extends AbstractDatabaseExe
 		TPM_counter tpm_counter = new TPM_counter();
 		registerCounter(tpm_counter);
 
-        return new TPCWCassandraDataNucleusExecutor(keyGenerator,tpm_counter);
+        return new TPCW_RDBMS_DataNucleusExecutor(keyGenerator,tpm_counter);
 
     }
 }

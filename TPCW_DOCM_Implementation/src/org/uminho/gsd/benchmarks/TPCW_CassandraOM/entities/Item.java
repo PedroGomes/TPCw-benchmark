@@ -65,6 +65,7 @@ public class Item implements Entity {
    // @Index
     @Persistent(defaultFetchGroup = "true")
     Author I_AUTHOR;
+	int I_AUTHOR_ID;
     String I_PUBLISHER;
     String I_DESC;
    // @Index
@@ -110,14 +111,21 @@ public class Item implements Entity {
         this.avail = avail;
         this.I_BACKING = I_BACKING;
         this.dimensions = dimensions;
+		if(author!=null){
+			I_AUTHOR_ID = author.a_id;
+		}
     }
 
     public Author getI_AUTHOR() {
         return I_AUTHOR;
+
     }
 
     public void setI_AUTHOR(Author I_AUTHOR) {
         this.I_AUTHOR = I_AUTHOR;
+		if(I_AUTHOR!=null){
+			I_AUTHOR_ID = I_AUTHOR.a_id;
+		}
     }
 
     public String getI_BACKING() {

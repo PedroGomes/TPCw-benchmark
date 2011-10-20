@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@
 package org.uminho.gsd.benchmarks.TPCW_CassandraOM.database_executor;
 
 
-import org.datanucleus.api.jdo.JDOQuery;
 import org.uminho.gsd.benchmarks.TPCW_CassandraOM.entities.*;
 import org.uminho.gsd.benchmarks.benchmark.BenchmarkNodeID;
 import org.uminho.gsd.benchmarks.dataStatistics.ResultHandler;
@@ -40,7 +39,7 @@ import java.sql.Timestamp;
 import java.util.*;
 
 
-public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterface {
+public class TPCW_RDBMS_DataNucleusExecutor implements DatabaseExecutorInterface {
 
 
     private String[] ship_types = {"AIR", "UPS", "FEDEX", "SHIP", "COURIER", "MAIL"};
@@ -88,29 +87,25 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
 	private TPM_counter counter;
 
+	PersistenceManager pm;
 
     static {
 
-		pmf = JDOHelper.getPersistenceManagerFactory("datanucleus.properties");
-        //pmf = JDOHelper.getPersistenceManagerFactory("datanucleus_mysql.properties");
 
-
-        // pmf = JDOHelper.getPersistenceManagerFactory("Test");
-
-//        try {
-//            PerformanceMeasurement.monitor(90);
-//        } catch (Exception e) {
-//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-//        }
+		pmf = JDOHelper.getPersistenceManagerFactory("datanucleus_relational.properties");
 
     }
 
 
-    public TPCWCassandraDataNucleusExecutor(KeyGenerator keyGenerator,TPM_counter tpm_counter) {
+    public TPCW_RDBMS_DataNucleusExecutor(KeyGenerator keyGenerator, TPM_counter tpm_counter) {
+
+	//	pmf = JDOHelper.getPersistenceManagerFactory("datanucleus_mysql.properties");
 
         this.keyGenerator = keyGenerator;
         random = new Random();
 		this.counter = tpm_counter;
+
+		pm = pmf.getPersistenceManager();
 
         //    pmf = JDOHelper.getPersistenceManagerFactory("Test");
     }
@@ -275,12 +270,12 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
     public synchronized Object insert(String key, String path, Entity value) throws Exception {
 
 
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
         try {
             pm.makePersistent(value);
 
         } finally {
-            pm.close();
+           // pm.close();
         }
 
         return null;
@@ -291,7 +286,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
     }
 
     public void update(String key, String path, String column, Object value, String superfield) throws Exception {
-        PersistenceManager pm = pmf.getPersistenceManager();
+        //PersistenceManager pm = pmf.getPersistenceManager();
 
         long stock = (Long) value;
         try {
@@ -306,14 +301,14 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             System.out.println("[ERROR]: ERROR IN STOCK CRAWLER ITERATION");
             throw e;
         } finally {
-            pm.close();
+            //pm.close();
         }
 
 
     }
 
     public Object read(String key, String path, String column, String superfield) throws Exception {
-        PersistenceManager pm = pmf.getPersistenceManager();
+        //PersistenceManager pm = pmf.getPersistenceManager();
 
         long stock = -1;
         try {
@@ -328,7 +323,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             System.out.println("[ERROR]: ERROR IN STOCK CRAWLER ITERATION");
             throw e;
         } finally {
-            pm.close();
+            //pm.close();
         }
 
         if (stock < 0) {
@@ -340,7 +335,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
     }
 
     public Map<String, Map<String, Object>> rangeQuery(String table, List<String> fields, int limit) throws Exception {
-        PersistenceManager pm = pmf.getPersistenceManager();
+        //PersistenceManager pm = pmf.getPersistenceManager();
         Collection<Object> items = null;
 
         try {
@@ -360,7 +355,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
 			throw ec;
 		}finally {
-			pm.close();
+			//pm.close();
 		}
 
         Map<String, Map<String, Object>> info = new TreeMap<String, Map<String, Object>>();
@@ -403,7 +398,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
 
         path = "org.uminho.gsd.benchmarks.TPCW_CassandraOM.entities." + path;
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
         try {
             Query q = pm.newQuery(Class.forName(path));
             long numberInstancesDeleted = q.deletePersistentAll();
@@ -412,7 +407,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
     }
 
@@ -425,6 +420,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
     }
 
     public void closeClient() {
+		//pm.close();
         //To change body of implemented methods use File | Settings | File Templates.
     }
 
@@ -442,7 +438,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
 
     public long getItemStock(String item_id) throws Exception {
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
         long stock = -1;
         try {
 
@@ -452,13 +448,13 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
         return stock;
     }
 
     public Map<String, Map<String, Object>> getItemStock_andProduct() throws Exception {
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
         Collection<Item> items = null;
 
         try {
@@ -469,7 +465,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
 
         Map<String, Map<String, Object>> info = new TreeMap<String, Map<String, Object>>();
@@ -515,7 +511,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
     public void HomeOperation(String costumer, int item) throws Exception {
 
 
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
 
         try {
 
@@ -541,7 +537,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
 
     }
@@ -551,7 +547,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
         if (create) {
 
-            PersistenceManager pm = pmf.getPersistenceManager();
+//            //PersistenceManager pm = pmf.getPersistenceManager();
 
             try {
 
@@ -564,14 +560,14 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             } catch (Exception ec) {
                 throw ec;
             } finally {
-                pm.close();
+                //pm.close();
             }
 
 
         }
 
-
-        PersistenceManager pm = pmf.getPersistenceManager();
+//
+//        //PersistenceManager pm = pmf.getPersistenceManager();
 
         try {
 
@@ -615,7 +611,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
 
 
@@ -626,7 +622,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         Customer c = generateCustomer(id);
 
 
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
 
         try {
 
@@ -639,7 +635,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
 
 
@@ -685,7 +681,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         GregorianCalendar cal = new GregorianCalendar();
         cal.add(Calendar.DAY_OF_YEAR, -1 * BenchmarkUtil.getRandomInt(1, 730));
 
-        java.sql.Date C_SINCE = new java.sql.Date(cal.getTime().getTime());
+        Date C_SINCE = new Date(cal.getTime().getTime());
         //  insert(C_SINCE, key, "Customer", "C_SINCE ", writeCon);
 
         cal.add(Calendar.DAY_OF_YEAR, BenchmarkUtil.getRandomInt(0, 60));
@@ -693,20 +689,20 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             cal = new GregorianCalendar();
         }
 
-        java.sql.Date C_LAST_LOGIN = new java.sql.Date(cal.getTime().getTime());
+        Date C_LAST_LOGIN = new Date(cal.getTime().getTime());
         //insert(C_LAST_LOGIN, key, "Customer", "C_LAST_LOGIN", writeCon);
 
-        java.sql.Timestamp C_LOGIN = new java.sql.Timestamp(System.currentTimeMillis());
+        Timestamp C_LOGIN = new Timestamp(System.currentTimeMillis());
         //insert(C_LOGIN, key, "Customer", "C_LOGIN", writeCon);
 
         cal = new GregorianCalendar();
         cal.add(Calendar.HOUR, 2);
 
-        java.sql.Timestamp C_EXPIRATION = new java.sql.Timestamp(cal.getTime().getTime());
+        Timestamp C_EXPIRATION = new Timestamp(cal.getTime().getTime());
         //insert(C_EXPIRATION, key, "Customer", "C_EXPIRATION", writeCon);
 
         cal = BenchmarkUtil.getRandomDate(1880, 2000);
-        java.sql.Date C_BIRTHDATE = new java.sql.Date(cal.getTime().getTime());
+        Date C_BIRTHDATE = new Date(cal.getTime().getTime());
         //insert(C_BIRTHDATE, key, "Customer", "C_BIRTHDATE", writeCon);
 
         String C_DATA = BenchmarkUtil.getRandomAString(100, 256);
@@ -731,7 +727,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         ADDR_ZIP = BenchmarkUtil.getRandomAString(5, 10);
 
 
-//        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
 //        Transaction tx = pm.currentTransaction();
 
         Address address = null;
@@ -761,7 +757,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 //            if (tx.isActive()) {
 //                tx.rollback();
 //            }
-//            pm.close();
+//            //pm.close();
 //        }
 
 
@@ -771,7 +767,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
     public void refreshSession(String C_ID) throws Exception {
 
 
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
         pm.getFetchPlan().addGroup("all");
         pm.getFetchPlan().setGroup("all");
 
@@ -789,14 +785,14 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
 
 
     }
 
     public void BuyRequest(String shopping_id) throws Exception {
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
         pm.getFetchPlan().setMaxFetchDepth(2);
         try {
 
@@ -828,14 +824,14 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
 
 
     }
 
     public void BuyComfirm(String costumer_id, String cart_id) throws Exception {
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
 
         try {
 	//		long t1 = System.currentTimeMillis();
@@ -852,7 +848,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
             pm.getFetchPlan().addGroup("all");
 
-            javax.jdo.identity.StringIdentity identity = new StringIdentity(Customer.class, costumer_id);
+            StringIdentity identity = new StringIdentity(Customer.class, costumer_id);
 
             //   System.out.println("KC:" + costumer_id.getClass().getName() + " : " + costumer_id);
             Customer cust = pm.getObjectById(Customer.class, costumer_id);
@@ -880,7 +876,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
             String shipping = ship_types[random.nextInt(ship_types.length)];
             String status = status_types[random.nextInt(status_types.length)];
-            java.sql.Date shipDate = new java.sql.Date(System.currentTimeMillis() + random.nextInt(644444400));
+            Date shipDate = new Date(System.currentTimeMillis() + random.nextInt(644444400));
 
 
             Order order = new Order(key, cust, new Date(System.currentTimeMillis()), SC_SUB_TOTAL, SC_TAX, SC_TOTAL, shipping, shipDate, status, c_addr.getAddr_id(), ship_addr_id.getAddr_id());
@@ -905,7 +901,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
             String cc_type = BenchmarkUtil.getRandomAString(10);
             long cc_number = BenchmarkUtil.getRandomNString(16);
             String cc_name = BenchmarkUtil.getRandomAString(30);
-            java.sql.Date cc_expiry = new java.sql.Date(System.currentTimeMillis() + random.nextInt(644444400));
+            Date cc_expiry = new Date(System.currentTimeMillis() + random.nextInt(644444400));
 
 
             CCXact ccXact = new CCXact(cc_type, cc_number, cc_name, cc_expiry, SC_TOTAL, shipDate, key, ship_addr_id.getCountry().getName());
@@ -922,13 +918,13 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
     }
 
     public void OrderInquiry(String customer) throws Exception {   //10/15
 
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
 
         try {
 
@@ -936,7 +932,14 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
 
             Extent e = pm.getExtent(Order.class, true);
-            Query q = pm.newQuery(e, "O_C_ID == \"" + customer + "\"");
+
+
+			Query q = pm.newQuery(e);
+			q.setFilter("O_C_ID == \"" + customer + "\"");
+
+			//Query q = pm.newQuery(e, "O_C_ID == \"" + customer + "\"");
+
+
             q.setRange("0,1");
             //       q.setOrdering("O_ID ascending");
 
@@ -967,13 +970,13 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
 
     }
 
     public void doSearch(String term, String field) throws Exception {   //30
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
 
         try {
 
@@ -982,8 +985,13 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
                 List<Item> items = new ArrayList<Item>();
 
                 Extent e = pm.getExtent(Item.class, true);
-                Query q = pm.newQuery(e, "I_SUBJECT == \"" + field + "\"");
-                Object res = q.execute();
+
+				Query q = pm.newQuery(e);
+				q.setFilter("I_SUBJECT == \"" + field + "\"");
+
+               // Query q = pm.newQuery(e, "I_SUBJECT == \"" + field + "\"");
+
+				Object res = q.execute();
                 if (res == null)
                     return;
 
@@ -1006,8 +1014,13 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
 
                 Author author = null;
                 Extent e = pm.getExtent(Author.class, true);
-                Query q = pm.newQuery(e, "A_LNAME == \"" + field + "\"");
-                q.setRange("0,1");
+
+				Query q = pm.newQuery(e);
+				q.setFilter("A_LNAME == \"" + field + "\"");
+
+            //    Query q = pm.newQuery(e, "A_LNAME == \"" + field + "\"");
+
+				q.setRange("0,1");
                 //          q.setOrdering("a_id ascending");
                 Object res = q.execute();
                 if (res == null)
@@ -1027,8 +1040,18 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
                 List<Item> items = new ArrayList<Item>();
                 if (author != null) {
                     Extent extent = pm.getExtent(Item.class, true);
-                    Query query = pm.newQuery(extent, "I_AUTHOR == \"" + author.getA_id() + "" + "\"");
-                    Object qres = query.execute();
+
+					Query query = pm.newQuery(extent);
+				//	query.setFilter("I_AUTHOR_ID == \"" + author.getA_id() + "" + "\"");
+					query.setFilter("I_AUTHOR_ID == author_id");
+					query.declareParameters("int author_id");
+
+
+					//query.setFilter("I_AUTHOR == \"" + author.getA_id() + "" + "\"");
+
+					//Query query = pm.newQuery(extent, "I_AUTHOR == \"" + author.getA_id() + "" + "\"");
+
+					Object qres = query.execute(author.getA_id());
                     if (qres == null)
                         return;
 
@@ -1053,8 +1076,13 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
                 List<Item> items = new ArrayList<Item>();
 
                 Extent e = pm.getExtent(Item.class, true);
-                Query q = pm.newQuery(e, "I_TITLE == \"" + field + "" + "\"");
-                Object res = q.execute();
+
+				Query q = pm.newQuery(e);
+				q.setFilter("I_TITLE == \"" + field + "" + "\"");
+
+               // Query q = pm.newQuery(e, "I_TITLE == \"" + field + "" + "\"");
+
+				Object res = q.execute();
                 if (res == null)
                     return;
 
@@ -1082,20 +1110,25 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
     }
 
     private void newProducts(String field) throws Exception {
 
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
         pm.getFetchPlan().addGroup("all");
         try {
 
             TreeMap<Long, Item> items = new TreeMap<Long, Item>();
 
             Extent e = pm.getExtent(Item.class, true);
-            Query q = pm.newQuery(e, "I_SUBJECT == \"" + field + "\"");
+
+			Query q = pm.newQuery(e);
+			q.setFilter("I_SUBJECT == \"" + field + "\"");
+
+			//Query q = pm.newQuery(e, "I_SUBJECT == \"" + field + "\"");
+
             Object res = q.execute();
             if (res == null)
                 return;
@@ -1124,12 +1157,12 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
     }
 
     public void BestSellers(String field) throws Exception { //30
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
 
         try {
 
@@ -1181,14 +1214,14 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
 
     }
 
     public void ItemInfo(int id) throws Exception {
 
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
 
         try {
             Item item = pm.getObjectById(Item.class, id);
@@ -1196,14 +1229,14 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } catch (Exception ec) {
             throw ec;
         } finally {
-            pm.close();
+            //pm.close();
         }
     }
 
     public void AdminChange(int item_id) throws Exception {
 
 
-        PersistenceManager pm = pmf.getPersistenceManager();
+//        //PersistenceManager pm = pmf.getPersistenceManager();
 
         try {
             Item item = pm.getObjectById(Item.class, item_id);
@@ -1304,7 +1337,7 @@ public class TPCWCassandraDataNucleusExecutor implements DatabaseExecutorInterfa
         } finally
 
         {
-            pm.close();
+            //pm.close();
         }
 
 

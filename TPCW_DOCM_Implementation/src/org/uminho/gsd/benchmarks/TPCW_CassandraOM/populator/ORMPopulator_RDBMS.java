@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -46,7 +46,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-public class ORMPopulator extends AbstractBenchmarkPopulator {
+public class ORMPopulator_RDBMS extends AbstractBenchmarkPopulator {
 
 	/**
 	 * Time measurements
@@ -84,13 +84,11 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
 	private static boolean client_error = false;
 
-	public ORMPopulator(AbstractDatabaseExecutorFactory database_interface_factory, String conf_filename) {
+	public ORMPopulator_RDBMS(AbstractDatabaseExecutorFactory database_interface_factory, String conf_filename) {
 		super(database_interface_factory, conf_filename);
 
 
-		pmf = JDOHelper.getPersistenceManagerFactory("datanucleus.properties");
-	//	pmf = JDOHelper.getPersistenceManagerFactory("datanucleus_mysql.properties");
-		//pmf = JDOHelper.getPersistenceManagerFactory("Test");
+		pmf = JDOHelper.getPersistenceManagerFactory("datanucleus_relational.properties");
 
 		databaseClientFactory = database_interface_factory;
 
@@ -238,10 +236,10 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
 
 			} catch (InterruptedException ex) {
-				Logger.getLogger(ORMPopulator.class.getName()).log(Level.SEVERE, null, ex);
+				Logger.getLogger(ORMPopulator_RDBMS.class.getName()).log(Level.SEVERE, null, ex);
 				return false;
 			} catch (Exception ex) {
-				Logger.getLogger(ORMPopulator.class.getName()).log(Level.SEVERE, null, ex);
+				Logger.getLogger(ORMPopulator_RDBMS.class.getName()).log(Level.SEVERE, null, ex);
 				return false;
 			}
 
@@ -344,6 +342,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 		item_list.add(-4);
 		item_list.add(-5);
 
+
 		Item item = new Item(-1, "iii", new java.sql.Date(1), "", "", "fff", "", "", 1, 1, "", 2, item_list, 1, new Date(1), "", "", new Author(-1, "", "", "", new Date(1), ""));
 
 		ShoppingCart cart_aux = new ShoppingCart("-1");
@@ -366,7 +365,11 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 		Author author = pm.getObjectById(Author.class,-1);
 		pm.deletePersistent(author);
 
+		Order order = new Order("-1",null,new Date(0),-1,-1,-1,"",new Date(0),"","","");
+		pm.makePersistent(order);
 
+		order = pm.getObjectById(Order.class,"-1");
+		pm.deletePersistent(order);
 
 	}
 
@@ -476,7 +479,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 				String first_name = names[0];
 				String last_name = names[1];
 				String middle_name = Mnames[1];
-				java.sql.Date dob = new java.sql.Date(cal.getTime().getTime());
+				Date dob = new Date(cal.getTime().getTime());
 				String bio = BenchmarkUtil.getRandomAString(125, 256);
 
 //            insert(first_name, key, "Author", "A_FNAME", writeConsistency);
@@ -633,7 +636,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 				GregorianCalendar cal = new GregorianCalendar();
 				cal.add(Calendar.DAY_OF_YEAR, -1 * BenchmarkUtil.getRandomInt(1, 730));
 
-				java.sql.Date C_SINCE = new java.sql.Date(cal.getTime().getTime());
+				Date C_SINCE = new Date(cal.getTime().getTime());
 				//  insert(C_SINCE, key, "Customer", "C_SINCE ", writeCon);
 
 				cal.add(Calendar.DAY_OF_YEAR, BenchmarkUtil.getRandomInt(0, 60));
@@ -641,20 +644,20 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 					cal = new GregorianCalendar();
 				}
 
-				java.sql.Date C_LAST_LOGIN = new java.sql.Date(cal.getTime().getTime());
+				Date C_LAST_LOGIN = new Date(cal.getTime().getTime());
 				//insert(C_LAST_LOGIN, key, "Customer", "C_LAST_LOGIN", writeCon);
 
-				java.sql.Timestamp C_LOGIN = new java.sql.Timestamp(System.currentTimeMillis());
+				Timestamp C_LOGIN = new Timestamp(System.currentTimeMillis());
 				//insert(C_LOGIN, key, "Customer", "C_LOGIN", writeCon);
 
 				cal = new GregorianCalendar();
 				cal.add(Calendar.HOUR, 2);
 
-				java.sql.Timestamp C_EXPIRATION = new java.sql.Timestamp(cal.getTime().getTime());
+				Timestamp C_EXPIRATION = new Timestamp(cal.getTime().getTime());
 				//insert(C_EXPIRATION, key, "Customer", "C_EXPIRATION", writeCon);
 
 				cal = BenchmarkUtil.getRandomDate(1880, 2000);
-				java.sql.Date C_BIRTHDATE = new java.sql.Date(cal.getTime().getTime());
+				Date C_BIRTHDATE = new Date(cal.getTime().getTime());
 				//insert(C_BIRTHDATE, key, "Customer", "C_BIRTHDATE", writeCon);
 
 				String C_DATA = BenchmarkUtil.getRandomAString(100, 256);
@@ -881,7 +884,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
 				GregorianCalendar cal = BenchmarkUtil.getRandomDate(1930, 2000);
 
-				java.sql.Date pubDate = new java.sql.Date(System.currentTimeMillis());
+				Date pubDate = new Date(System.currentTimeMillis());
 
 
 				String thumbnail = new String("img" + i % 100 + "/thumb_" + i + ".gif");
@@ -892,7 +895,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
 				String isbn = BenchmarkUtil.getRandomAString(13);
 
-				java.sql.Date avail = new java.sql.Date(System.currentTimeMillis() + rand.nextInt(1200000)); //Data when available
+				Date avail = new Date(System.currentTimeMillis() + rand.nextInt(1200000)); //Data when available
 
 				String dimensions = ((double) BenchmarkUtil.getRandomInt(1, 9999) / 100.0) + "x"
 						+ ((double) BenchmarkUtil.getRandomInt(1, 9999) / 100.0) + "x"
@@ -1370,11 +1373,11 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 				table = "ORDERS";
 
 				Customer O_C_ID;
-				java.sql.Date O_DATE;
+				Date O_DATE;
 				float O_SUB_TOTAL;
 				float O_TAX;
 				float O_TOTAL;
-				java.sql.Date O_SHIP_DATE;
+				Date O_SHIP_DATE;
 				String O_SHIP_TYPE;
 				Address O_SHIP_ADDR;
 				String O_STATUS;
@@ -1385,7 +1388,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 				O_C_ID = Customer_id;
 
 				GregorianCalendar call = new GregorianCalendar();
-				O_DATE = new java.sql.Date(call.getTime().getTime());
+				O_DATE = new Date(call.getTime().getTime());
 				//insertInSuperColumn(O_DATE, O_C_ID, column_family, O_ID + "", "O_DATE", write_con);
 
 				O_SUB_TOTAL = rand.nextFloat() * 100 * 4;
@@ -1398,7 +1401,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 				//insertInSuperColumn(O_TOTAL, O_C_ID, column_family, O_ID + "", "O_TOTAL", write_con);
 
 				call.add(Calendar.DAY_OF_YEAR, -1 * rand.nextInt(60) + 1);
-				O_SHIP_DATE = new java.sql.Date(call.getTime().getTime());
+				O_SHIP_DATE = new Date(call.getTime().getTime());
 				//insertInSuperColumn(O_SHIP_DATE, O_C_ID, column_family, O_ID + "", "O_SHIP_DATE", write_con);
 
 				O_SHIP_TYPE = ship_types[rand.nextInt(ship_types.length)];
@@ -1463,7 +1466,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 				String CX_TYPE;
 				int CX_NUM;
 				String CX_NAME;
-				java.sql.Date CX_EXPIRY;
+				Date CX_EXPIRY;
 				double CX_XACT_AMT;
 				int CX_CO_ID; //Order.getID;
 
@@ -1480,7 +1483,7 @@ public class ORMPopulator extends AbstractBenchmarkPopulator {
 
 				GregorianCalendar cal = new GregorianCalendar();
 				cal.add(Calendar.DAY_OF_YEAR, BenchmarkUtil.getRandomInt(10, 730));
-				CX_EXPIRY = new java.sql.Date(cal.getTime().getTime());
+				CX_EXPIRY = new Date(cal.getTime().getTime());
 
 				Country country_id = countries.get(BenchmarkUtil.getRandomInt(0, countries.size() - 1));
 

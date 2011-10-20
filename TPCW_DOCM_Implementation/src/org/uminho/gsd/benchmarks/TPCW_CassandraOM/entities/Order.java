@@ -30,7 +30,6 @@ import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 import java.sql.Date;
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.TreeMap;
 
@@ -56,8 +55,9 @@ public class Order implements Entity {
     String O_ID;
     //@Index
     @Persistent
-    Customer O_C_ID;
-    @Persistent    
+    Customer O_C;
+	String O_C_ID;
+    @Persistent
     Date O_DATE;
     float O_SUB_TOTAL;
     float O_TAX;
@@ -74,9 +74,9 @@ public class Order implements Entity {
 
 
 
-    public Order(String O_ID, Customer O_C_ID, Date O_DATE, float O_SUB_TOTAL, float O_TAX, float O_TOTAL, String O_SHIP_TYPE, Date shipDate, String O_STATUS, String billAddress, String O_SHIP_ADDR) {
+    public Order(String O_ID, Customer O_C, Date O_DATE, float O_SUB_TOTAL, float O_TAX, float O_TOTAL, String O_SHIP_TYPE, Date shipDate, String O_STATUS, String billAddress, String O_SHIP_ADDR) {
         this.O_ID = O_ID;
-        this.O_C_ID = O_C_ID;
+        this.O_C = O_C;
         this.O_DATE = O_DATE;
         this.O_SUB_TOTAL = O_SUB_TOTAL;
         this.O_TAX = O_TAX;
@@ -86,6 +86,8 @@ public class Order implements Entity {
         this.O_STATUS = O_STATUS;
         this.billAddress = billAddress;
         this.O_SHIP_ADDR = O_SHIP_ADDR;
+		if(O_C!=null)
+			this.O_C_ID = O_C.getC_id();
     }
 
     public String getO_ID() {
@@ -96,12 +98,13 @@ public class Order implements Entity {
         O_ID = o_ID;
     }
 
-    public Customer getO_C_ID() {
-        return O_C_ID;
+    public Customer getO_C() {
+        return O_C;
     }
 
-    public void setO_C_ID(Customer O_C_ID) {
-        this.O_C_ID = O_C_ID;
+    public void setO_C(Customer O_C_ID) {
+        this.O_C = O_C_ID;
+		this.O_C_ID = O_C_ID.getC_id();
     }
 
     public String getO_SHIP_ADDR() {
@@ -201,7 +204,7 @@ public class Order implements Entity {
 
         TreeMap<String, Object> values = new TreeMap<String, Object>();
 
-        values.put("O_C_ID", O_C_ID);
+        values.put("O_C_ID", O_C);
         values.put("O_DATE", O_DATE);
         values.put("O_SUB_TOTAL", O_SUB_TOTAL);
         values.put("O_TAX", O_TAX);

@@ -27,7 +27,6 @@ package org.uminho.gsd.benchmarks.TPCW_CassandraOM.entities;
 
 import org.uminho.gsd.benchmarks.interfaces.Entity;
 
-import javax.jdo.annotations.Index;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
