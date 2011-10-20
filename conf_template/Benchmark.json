@@ -41,7 +41,13 @@
                "DataEngineInterface" : "org.uminho.gsd.benchmarks.TPCW_CassandraOM.database_executor.TPCWCassandraDatanucleusExecutorFactory",
                "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.TPCW_CassandraOM.populator.ORMPopulator",
                "databaseExecutorConfiguration" : "CassandraTPCW.json"
-            }
+            },
+           "relational_orm" :
+            {
+               "DataEngineInterface" : "org.uminho.gsd.benchmarks.TPCW_CassandraOM.database_executor.TPCW_RDBMS_DatanucleusExecutorFactory",
+               "BenchmarkPopulator" : "org.uminho.gsd.benchmarks.TPCW_CassandraOM.populator.ORMPopulator_RDBMS",
+               "databaseExecutorConfiguration" : "CassandraTPCW.json"
+            }   
       },
    "Workload_alias" :
       {
