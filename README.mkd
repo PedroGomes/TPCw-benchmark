@@ -36,6 +36,11 @@ Datanucleus Cassandra (only for 0.6):
 - jdo2-api.jar (see <a href="https://github.com/PedroGomes/datanucleus-cassandra">Datanucleus Cassandra</a> )
 - datanucleus-cassandra-0.1.jar (see <a href="https://github.com/PedroGomes/datanucleus-cassandra">Datanucleus Cassandra</a> )
 
+Riak 0.14: 
+- google-gson-stream-1.7.1.jar
+- gson-1.7.1.jar
+- riak-java-client (with the new API)
+
 
 # Configuration: 
 
@@ -76,12 +81,16 @@ Cassandra 0.6:
 Cassandra 0.7+:
 - Create the keyspace as defined by you in the configuration file with your options, and the database will create the column families. 
  
+Riak 0.14:
+- Buckets are created automatically
 
 # Warnings and needed improvements:
 - Based on TPCW v1.8
 - The population process started in a generic form and for that reason the Cassandra populator reads what fields it should use to create super columns; maybe this doesn't make sense anymore.
 - One of the problems in the MySQL benchmark is the client side generation of ids. Avoiding the overhead of transactions or auto increment (synchronization mechanisms as seen in other implementations are not suitable with the multi node mode) some of the queries may have minor changes due to their ids. 
 - On consistency workload the stock of items is usually a high number to ease the analyze of the data, on normal TPCW workloads the stock is updated when the coded minimum is reached as supposed, but in Cassandra no guaranties are made about the outcome of that process.   
+- The Riak implementation doesn't support consistency level configuration.
+- The Best Sellers operation in the the Riak implementation must be improved because it may not work properly if it is called concurrently
 
 # Feedback
 
