@@ -15,7 +15,7 @@
   <property name="compiler.args" value=""/>
   <property name="compiler.max.memory" value="128m"/>
   <property name="lib.home" value="libs" />
-  <!--<property name="conf.home" value="conf" />--> 
+  <property name="conf.home" value="conf_template" />
 
   <patternset id="ignored.files">
     <exclude name="**/CVS/**"/>
@@ -263,6 +263,139 @@
     <delete dir="${tpcw_cassandra_implementation.output.dir}"/>
     <delete dir="${tpcw_cassandra_implementation.testoutput.dir}"/>
   </target>
+
+
+
+
+<!-- Module TPCW_Riak_Implementation -->
+  
+  <dirname property="module.tpcw_riak_implementation.basedir" file="${ant.file}"/>
+  
+  <property name="compiler.args.tpcw_riak_implementation" value="${compiler.args}"/>
+  
+  <property name="tpcw_riak_implementation.output.dir" value="${module.tpcw_riak_implementation.basedir}/out/production/TPCW_Riak_Implementation"/>
+  <property name="tpcw_riak_implementation.testoutput.dir" value="${module.tpcw_riak_implementation.basedir}/out/test/TPCW_Riak_Implementation"/>
+  
+  <path id="tpcw_riak_implementation.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="tpcw_riak_implementation.module.production.classpath">
+    <pathelement location="${benchmarkingsuite.output.dir}"/>
+    <pathelement location="${basedir}/conf/DataStore"/>
+    <pathelement location="${basedir}/libs/google-gson-stream-1.7.1.jar"/>
+    <pathelement location="${basedir}/libs/gson-1.7.1.jar"/>  
+    <pathelement location="${basedir}/libs/riak-java-client.jar"/>
+    <pathelement location="${basedir}/libs/httpclient-4.1.1.jar"/>
+    <pathelement location="${basedir}/libs/jackson-core-asl-1.7.5.jar"/>
+    <pathelement location="${basedir}/libs/jackson-mapper-asl-1.7.5.jar"/>
+    <pathelement location="${basedir}/libs/junit-dep-4.4.jar"/>
+    <pathelement location="${basedir}/libs/mockito-core-1.8.0.jar"/>
+    <pathelement location="${basedir}/libs/protobuf-java-2.3.0.jar"/>
+
+
+  </path>
+  
+  <path id="tpcw_riak_implementation.runtime.production.module.classpath">
+    <pathelement location="${tpcw_riak_implementation.output.dir}"/>
+    <path refid="benchmarkingsuite.runtime.production.module.classpath"/>
+    <pathelement location="${basedir}/conf/DataStore"/>
+    <pathelement location="${basedir}/libs/google-gson-stream-1.7.1.jar"/>
+    <pathelement location="${basedir}/libs/gson-1.7.1.jar"/>  
+    <pathelement location="${basedir}/libs/riak-java-client.jar"/>  
+    <pathelement location="${basedir}/libs/httpclient-4.1.1.jar"/>
+    <pathelement location="${basedir}/libs/jackson-core-asl-1.7.5.jar"/>
+    <pathelement location="${basedir}/libs/jackson-mapper-asl-1.7.5.jar"/>
+    <pathelement location="${basedir}/libs/junit-dep-4.4.jar"/>
+    <pathelement location="${basedir}/libs/mockito-core-1.8.0.jar"/>
+    <pathelement location="${basedir}/libs/protobuf-java-2.3.0.jar"/>  
+  </path>
+  
+  <path id="tpcw_riak_implementation.module.classpath">
+    <pathelement location="${tpcw_riak_implementation.output.dir}"/>
+    <pathelement location="${benchmarkingsuite.testoutput.dir}"/>
+    <pathelement location="${benchmarkingsuite.output.dir}"/>
+    <pathelement location="${basedir}/conf/DataStore"/>
+    <pathelement location="${basedir}/libs/google-gson-stream-1.7.1.jar"/>
+    <pathelement location="${basedir}/libs/gson-1.7.1.jar"/>  
+    <pathelement location="${basedir}/libs/riak-java-client.jar"/>    
+    <pathelement location="${basedir}/libs/httpclient-4.1.1.jar"/>
+    <pathelement location="${basedir}/libs/jackson-core-asl-1.7.5.jar"/>
+    <pathelement location="${basedir}/libs/jackson-mapper-asl-1.7.5.jar"/>
+    <pathelement location="${basedir}/libs/junit-dep-4.4.jar"/>
+    <pathelement location="${basedir}/libs/mockito-core-1.8.0.jar"/>
+    <pathelement location="${basedir}/libs/protobuf-java-2.3.0.jar"/>
+  </path>
+  
+  <path id="tpcw_riak_implementation.runtime.module.classpath">
+    <pathelement location="${tpcw_riak_implementation.testoutput.dir}"/>
+    <pathelement location="${tpcw_riak_implementation.output.dir}"/>
+    <path refid="benchmarkingsuite.runtime.module.classpath"/>
+    <pathelement location="${basedir}/conf/DataStore"/>
+    <pathelement location="${basedir}/libs/google-gson-stream-1.7.1.jar"/>
+    <pathelement location="${basedir}/libs/gson-1.7.1.jar"/>  
+    <pathelement location="${basedir}/libs/riak-java-client.jar"/> 
+    <pathelement location="${basedir}/libs/httpclient-4.1.1.jar"/>
+    <pathelement location="${basedir}/libs/jackson-core-asl-1.7.5.jar"/>
+    <pathelement location="${basedir}/libs/jackson-mapper-asl-1.7.5.jar"/>
+    <pathelement location="${basedir}/libs/junit-dep-4.4.jar"/>
+    <pathelement location="${basedir}/libs/mockito-core-1.8.0.jar"/>
+    <pathelement location="${basedir}/libs/protobuf-java-2.3.0.jar"/>   
+  </path>
+  
+  
+  <patternset id="excluded.from.module.tpcw_riak_implementation">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.tpcw_riak_implementation">
+    <patternset refid="excluded.from.module.tpcw_riak_implementation"/>
+  </patternset>
+  
+  <path id="tpcw_riak_implementation.module.sourcepath">
+    <dirset dir="${module.tpcw_riak_implementation.basedir}/TPCW_Riak_Implementation">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.tpcw_riak_implementation" depends="compile.module.tpcw_riak_implementation.production,compile.module.tpcw_riak_implementation.tests" description="Compile module TPCW_Riak_Implementation"/>
+  
+  <target name="compile.module.tpcw_riak_implementation.production" depends="compile.module.benchmarkingsuite" description="Compile module TPCW_Riak_Implementation; production classes">
+    <mkdir dir="${tpcw_riak_implementation.output.dir}"/>
+    <javac destdir="${tpcw_riak_implementation.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
+      <compilerarg line="${compiler.args.tpcw_riak_implementation}"/>
+      <bootclasspath refid="tpcw_riak_implementation.module.bootclasspath"/>
+      <classpath refid="tpcw_riak_implementation.module.production.classpath"/>
+      <src refid="tpcw_riak_implementation.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.tpcw_riak_implementation"/>
+    </javac>
+    
+    <copy todir="${tpcw_riak_implementation.output.dir}">
+      <fileset dir="${module.tpcw_riak_implementation.basedir}/TPCW_Riak_Implementation/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.tpcw_riak_implementation.tests" depends="compile.module.tpcw_riak_implementation.production" description="compile module TPCW_Riak_Implementation; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.tpcw_riak_implementation" description="cleanup module">
+    <delete dir="${tpcw_riak_implementation.output.dir}"/>
+    <delete dir="${tpcw_riak_implementation.testoutput.dir}"/>
+  </target>
+
+
+
+
+
+
+
+
+
+
+
   
   
   <!-- Module TPCW_DOCM_Implementation -->
@@ -488,9 +621,9 @@
     <!-- Perform any build initialization in this target -->
   </target>
   
-  <target name="clean" depends="clean.module.benchmarkingsuite, clean.module.tpcw_cassandra_implementation, clean.module.tpcw_docm_implementation, clean.module.tpcw_mysql_implementation" description="cleanup all"/>
+  <target name="clean" depends="clean.module.benchmarkingsuite, clean.module.tpcw_cassandra_implementation, clean.module.tpcw_riak_implementation, clean.module.tpcw_docm_implementation, clean.module.tpcw_mysql_implementation" description="cleanup all"/>
   
-  <target name="build.modules" depends="init, clean, compile.module.benchmarkingsuite, compile.module.tpcw_cassandra_implementation, compile.module.tpcw_docm_implementation, compile.module.tpcw_mysql_implementation" description="build all modules"/>
+  <target name="build.modules" depends="init, clean, compile.module.benchmarkingsuite, compile.module.tpcw_cassandra_implementation, compile.module.tpcw_riak_implementation, compile.module.tpcw_docm_implementation, compile.module.tpcw_mysql_implementation" description="build all modules"/>
   
   <target name="init.artifacts">
     <property name="artifacts.temp.dir" value="${basedir}/__artifacts_temp"/>
@@ -528,7 +661,7 @@
 
   
   
-  <target name="artifact.tpcw_benchmark" depends="init.artifacts, compile.module.benchmarkingsuite, compile.module.tpcw_cassandra_implementation, compile.module.tpcw_docm_implementation, compile.module.tpcw_mysql_implementation" description="Build &apos;tpcw_benchmark&apos; artifact">
+  <target name="artifact.tpcw_benchmark" depends="init.artifacts, compile.module.benchmarkingsuite, compile.module.tpcw_cassandra_implementation, compile.module.tpcw_riak_implementation, compile.module.tpcw_docm_implementation, compile.module.tpcw_mysql_implementation" description="Build &apos;tpcw_benchmark&apos; artifact">
     <property name="artifact.temp.output.tpcw_benchmark" value="${artifacts.temp.dir}/tpcw_benchmark"/>
     <property name="artifact.output.run" value="${basedir}/run"/>
     <property name="artifact.output.run.lib" value="${artifact.output.run}/libs"/>
@@ -547,6 +680,7 @@
      
       <zipfileset dir="${benchmarkingsuite.output.dir}"/>
       <zipfileset dir="${tpcw_cassandra_implementation.output.dir}"/>
+      <zipfileset dir="${tpcw_riak_implementation.output.dir}"/>
       <zipfileset dir="${tpcw_docm_implementation.output.dir}"/>
       <zipfileset dir="${tpcw_mysql_implementation.output.dir}"/> 
       

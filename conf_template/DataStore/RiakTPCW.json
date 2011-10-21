@@ -1,0 +1,29 @@
+{
+"DataBaseInfo":{
+	"keyspace":"Tpcw"
+	},
+"DataBaseConnections":{
+	"127.0.0.1":"8098",
+        "127.0.0.1":"8098"
+	},
+"Configuration":{
+	 "retrievedRowSlices":"1000"
+	},
+"ConsistencyLevels":{
+	"INSERT_CONSISTENCY_LEVEL":"QUORUM",
+	"REMOVE_CONSISTENCY_LEVEL":"ALL",
+	"RANGE_CONSISTENCY_LEVEL":"QUORUM",
+	"TRANSACTIONAL_CONSISTENCY_LEVEL":"QUORUM",
+	"READ_CONSISTENCY_LEVEL":"QUORUM",
+	"WRITE_CONSISTENCY_LEVEL":"QUORUM"
+	},
+"ColumnPaths":{
+	"OrderLines":"OL_O_ID",
+	"ShoppingCart":"KEY_SHOPPING_CART",
+	"results":"CLIENT_ID"
+	},
+"OtherConnections":{
+   "127.0.0.1":"8098"
+	}	
+	
+}
