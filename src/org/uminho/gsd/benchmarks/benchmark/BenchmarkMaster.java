@@ -98,9 +98,9 @@ public class BenchmarkMaster {
 
         countBarrier = new CountDownLatch(slaves.size());
 
-        ensureEnd end = new ensureEnd();
-        Thread ensureEndThread = new Thread(end);
-        ensureEndThread.start();
+//        ensureEnd end = new ensureEnd();
+//        Thread ensureEndThread = new Thread(end);
+//        ensureEndThread.start();
 
         executor.run(new BenchmarkNodeID(PersonalClientID));
         System.out.println("[INFO:]SLAVE ENDED");
@@ -112,7 +112,7 @@ public class BenchmarkMaster {
 
         executor.consolidate();
 
-        end.killServer();
+    //    end.killServer();
     }
 
 
