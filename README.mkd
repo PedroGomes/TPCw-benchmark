@@ -62,7 +62,7 @@ This database allows the use of different populating classes, database executing
                                            
     -c   : clean the database                                                                                
     -cb  : special clean (outdated)                                                                   
-    -p   : populate                                                                                         
+    -p   : populate and execute                                                                                        
     -pop : populate and return (can be used with -c)   
                                                     
    ------------------------------------------------------    
