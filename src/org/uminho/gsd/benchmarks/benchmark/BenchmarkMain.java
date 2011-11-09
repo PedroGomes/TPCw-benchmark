@@ -28,8 +28,6 @@ import org.uminho.gsd.benchmarks.interfaces.executor.AbstractDatabaseExecutorFac
 import org.uminho.gsd.benchmarks.interfaces.populator.AbstractBenchmarkPopulator;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -283,7 +281,7 @@ public class BenchmarkMain {
             }
 
             if (!populate && cleanDB) {
-                logger.fatal("THE DATABASE IS PROBABLY EMPTY, ABORTING");
+             //   logger.fatal("THE DATABASE IS PROBABLY EMPTY, ABORTING");
                 return;
             }
 
